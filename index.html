@@ -2,8 +2,10 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2300F0FF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z'/%3E%3Cpath d='M20 3v4'/%3E%3Cpath d='M22 5h-4'/%3E%3Cpath d='M4 17v2'/%3E%3Cpath d='M5 18H3'/%3E%3C/svg%3E" />
+    <!-- Favicon verde UTM -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23004925' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z'/%3E%3C/svg%3E" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Inforario — Transforma tu horario del SGA de la UTM en una agenda digital interactiva. Exporta a PDF, .ics y personaliza tus colores." />
     <title>Inforario | Inteligencia Académica UTM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -11,94 +13,87 @@
         theme: {
           extend: {
             colors: {
-              background: '#0A0E27',
-              foreground: '#E0E7FF',
-              
-              card: '#151B3B',
-              'card-foreground': '#E0E7FF',
-              
-              popover: '#151B3B',
-              'popover-foreground': '#E0E7FF',
-              
-              primary: '#00F0FF',
-              'primary-foreground': '#0A0E27',
-              
-              secondary: '#FF006E',
-              'secondary-foreground': '#FFFFFF',
-              
-              muted: '#1E2749',
-              'muted-foreground': '#8B92B0',
-              
-              accent: '#FFBE0B',
-              'accent-foreground': '#0A0E27',
-              
-              destructive: '#FF006E',
-              'destructive-foreground': '#FFFFFF',
-              
-              border: '#1E2749', 
-              'border-glow': '#00F0FF',
-              input: '#151B3B',
-              ring: '#00F0FF',
-              
-              utm: '#00F0FF', 
-              conflict: '#FF006E',
+              // Superficies
+              "background":                  "#fbf9f8",
+              "surface":                     "#fbf9f8",
+              "surface-bright":              "#fbf9f8",
+              "surface-dim":                 "#dcd9d9",
+              "surface-container-lowest":    "#ffffff",
+              "surface-container-low":       "#f6f3f2",
+              "surface-container":           "#f0eded",
+              "surface-container-high":      "#eae8e7",
+              "surface-container-highest":   "#e4e2e1",
+              "surface-variant":             "#e4e2e1",
+
+              // Primario — Verde UTM
+              "primary":                     "#004925",
+              "primary-container":           "#006334",
+              "primary-fixed":               "#a1f5b8",
+              "primary-fixed-dim":           "#86d89d",
+              "inverse-primary":             "#86d89d",
+
+              // Secundario — Dorado UTM
+              "secondary":                   "#7c5800",
+              "secondary-container":         "#fcb812",
+              "secondary-fixed":             "#ffdea7",
+              "secondary-fixed-dim":         "#ffbb1e",
+
+              // Texto sobre colores
+              "on-surface":                  "#1b1c1c",
+              "on-surface-variant":          "#3f4940",
+              "on-primary":                  "#ffffff",
+              "on-primary-container":        "#8adda1",
+              "on-primary-fixed":            "#00210e",
+              "on-primary-fixed-variant":    "#00522a",
+              "on-secondary":                "#ffffff",
+              "on-secondary-container":      "#6a4b00",
+              "on-secondary-fixed":          "#271900",
+              "on-secondary-fixed-variant":  "#5e4200",
+
+              // Terciarios
+              "tertiary":                    "#393f43",
+              "tertiary-container":          "#50565b",
+              "tertiary-fixed":              "#dee3e8",
+              "tertiary-fixed-dim":          "#c1c7cc",
+              "on-tertiary":                 "#ffffff",
+              "on-tertiary-container":       "#c5cbd0",
+              "on-tertiary-fixed":           "#161c20",
+              "on-tertiary-fixed-variant":   "#41484c",
+
+              // Sistema
+              "outline":                     "#6f7a70",
+              "outline-variant":             "#bfc9be",
+              "error":                       "#ba1a1a",
+              "error-container":             "#ffdad6",
+              "on-error":                    "#ffffff",
+              "on-error-container":          "#93000a",
+              "inverse-surface":             "#303030",
+              "inverse-on-surface":          "#f3f0f0",
+              "surface-tint":                "#136c3c",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              sm:      "0.375rem",
+              lg:      "0.5rem",
+              xl:      "1.5rem",
+              "2xl":   "2rem",
+              "3xl":   "2.5rem",
+              full:    "9999px",
             },
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
             },
-            animation: {
-              first: "moveVertical 30s ease infinite",
-              second: "moveInCircle 20s reverse infinite",
-              third: "moveInCircle 40s linear infinite",
-              fourth: "moveHorizontal 40s ease infinite",
-              fifth: "moveInCircle 20s ease infinite",
+            boxShadow: {
+              editorial:    "0 20px 40px rgba(0, 73, 37, 0.06)",
+              "editorial-lg": "0 24px 48px rgba(0, 73, 37, 0.12)",
+              "glass-nav":  "0 20px 40px rgba(0, 73, 37, 0.06)",
             },
-            keyframes: {
-              moveHorizontal: {
-                "0%": { transform: "translateX(-50%) translateY(-10%)" },
-                "50%": { transform: "translateX(50%) translateY(10%)" },
-                "100%": { transform: "translateX(-50%) translateY(-10%)" },
-              },
-              moveVertical: {
-                "0%": { transform: "translateY(-50%)" },
-                "50%": { transform: "translateY(50%)" },
-                "100%": { transform: "translateY(-50%)" },
-              },
-              moveInCircle: {
-                "0%": { transform: "rotate(0deg)" },
-                "50%": { transform: "rotate(180deg)" },
-                "100%": { transform: "rotate(360deg)" },
-              },
-            }
           }
         }
       }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-      body { font-family: 'Inter', sans-serif; background-color: #0A0E27; color: #E0E7FF; }
-      .no-scrollbar::-webkit-scrollbar {
-          display: none;
-      }
-      .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-      }
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #0A0E27; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #1E2749; 
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #00F0FF; 
-      }
-    </style>
+    <!-- Inter desde Google Fonts — pesos completos -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script type="importmap">
 {
   "imports": {
@@ -123,7 +118,7 @@
 </script>
 <link rel="stylesheet" href="/globals.css">
 </head>
-  <body class="bg-background text-foreground">
+  <body class="bg-background text-on-surface">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

@@ -14,7 +14,7 @@ const isConfigured = !!(activeUrl && activeKey && !activeUrl.includes("placehold
 const createDummyBuilder = () => {
   const errorResult = { data: null, error: { message: "Database not configured" } };
   const promise = Promise.resolve(errorResult);
-  
+
   const builder: any = {
     select: () => builder,
     insert: () => builder,
@@ -59,7 +59,7 @@ export const supabase = client || {
   from: () => createDummyBuilder(),
   auth: {
     getSession: () => Promise.resolve({ data: { session: null }, error: null }),
-    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } }, error: null }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } }, error: null }),
     signInWithPassword: () => Promise.resolve({ error: { message: "Database not configured" } }),
     signUp: () => Promise.resolve({ error: { message: "Database not configured" } }),
     resetPasswordForEmail: () => Promise.resolve({ error: { message: "Database not configured" } }),
@@ -91,7 +91,7 @@ export const saveScheduleToDB = async (userId: string, schedule: Schedule) => {
         })
         .eq('id', schedule.id)
         .select();
-        
+
       if (error) throw error;
       return data;
     } else {
@@ -166,10 +166,10 @@ export const deleteSchedule = async (scheduleId: string) => {
   } catch (err: any) {
     console.error("Delete error:", err);
     if (err.message && (err.message.includes("Invalid login credentials") || err.message.includes("JWT"))) {
-        throw new Error("Credenciales inválidas o sesión expirada. Por favor cierra sesión y vuelve a ingresar.");
+      throw new Error("Credenciales inválidas o sesión expirada. Por favor cierra sesión y vuelve a ingresar.");
     }
     if (err.message === "Script error.") {
-        throw new Error("Error de conexión. Por favor verifica tu internet o intenta más tarde.");
+      throw new Error("Error de conexión. Por favor verifica tu internet o intenta más tarde.");
     }
     throw err;
   }
@@ -184,7 +184,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
       .select('*')
       .eq('id', userId)
       .single();
-    
+
     if (error) return null;
     return data;
   } catch (err: any) {
@@ -205,9 +205,9 @@ export const signInWithGoogle = async () => {
 };
 
 export const signInWithEmail = async (email: string, password: string) => {
-   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-   if (error) throw error;
-   return data;
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return data;
 };
 
 export const signUpWithEmail = async (email: string, password: string, fullName: string) => {

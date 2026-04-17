@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, X, Loader2 } from 'lucide-react';
+import { Upload, FileText, X, Loader2, ArrowRight } from 'lucide-react';
 
 interface UploaderProps {
   onUpload: (file: File) => Promise<void>;
@@ -55,68 +55,86 @@ const Uploader: React.FC<UploaderProps> = ({ onUpload, isProcessing }) => {
   return (
     <div className="w-full max-w-2xl mx-auto">
       {!selectedFile ? (
-        <div 
-          className={`relative border-2 border-dashed rounded-xl p-4 transition-all flex flex-col items-center justify-center min-h-[200px] text-center
-            ${dragActive ? 'border-primary bg-primary/10' : 'border-muted hover:border-primary/50 bg-card'}`}
+        <div
+          className={`relative rounded-xl p-8 transition-all duration-300 flex flex-col items-center justify-center min-h-[220px] text-center cursor-pointer
+            ${dragActive
+              ? 'bg-primary/5 shadow-[inset_0_0_0_2px_rgba(0,73,37,0.2)]'
+              : 'bg-surface-container-low hover:bg-surface-container hover:shadow-editorial'
+            }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
+          onClick={() => inputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
+          aria-label="Zona para cargar archivo de horario PDF"
         >
-          <input 
+          <input
             ref={inputRef}
-            type="file" 
-            className="hidden" 
+            type="file"
+            className="hidden"
             onChange={handleChange}
             accept="application/pdf"
+            id="uploader-file-input"
           />
-          
-          <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3 text-primary">
-            <Upload size={24} />
+
+          {/* Ícono upload */}
+          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-5 transition-all duration-300
+            ${dragActive ? 'bg-primary-fixed scale-110' : 'bg-surface-container-highest'}`}
+          >
+            <Upload size={28} className={dragActive ? 'text-on-primary-fixed-variant' : 'text-on-surface-variant'} />
           </div>
-          
-          <h3 className="text-lg font-semibold text-foreground mb-1">Cargar Horario Académico</h3>
-          <p className="text-muted-foreground mb-4 max-w-md text-sm">
-            Arrastra tu archivo PDF aquí.<br/>
-            Extraeremos automáticamente tu horario.
+
+          <h3 className="text-xl font-bold text-on-surface mb-2">Cargar Horario Académico</h3>
+          <p className="text-on-surface-variant mb-6 max-w-sm text-sm leading-relaxed">
+            Arrastra tu archivo PDF del SGA aquí o haz clic para seleccionarlo.<br />
+            Extraeremos tu horario automáticamente.
           </p>
-          
-          <button 
-            onClick={() => inputRef.current?.click()}
-            className="px-5 py-2 bg-primary text-primary-foreground rounded-lg font-bold hover:bg-cyan-300 transition-colors shadow-[0_0_15px_rgba(0,240,255,0.3)] text-sm"
+
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}
+            className="px-6 py-3 bg-secondary-container text-on-secondary-container rounded-xl font-bold text-sm
+              shadow-editorial hover:scale-105 active:scale-95 transition-transform duration-200 flex items-center gap-2"
+            id="uploader-select-btn"
           >
             Seleccionar Archivo
+            <ArrowRight size={16} />
           </button>
-          
-          <div className="mt-3 text-[10px] text-muted-foreground">
-            Formato soportado: PDF
-          </div>
+
+          <div className="mt-4 text-xs text-outline">Formato soportado: PDF</div>
         </div>
       ) : (
-        <div className="bg-card rounded-xl shadow-lg p-5 border border-primary">
-          <div className="flex items-center justify-between mb-4">
-             <div className="flex items-center gap-3">
-               <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center text-primary">
-                 <FileText size={20} />
-               </div>
-               <div>
-                 <p className="font-medium text-foreground text-sm">{selectedFile.name}</p>
-                 <p className="text-[10px] text-muted-foreground">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
-               </div>
-             </div>
-             <button 
-                onClick={() => setSelectedFile(null)}
-                className="text-muted-foreground hover:text-destructive transition-colors"
-                disabled={isProcessing}
-             >
-               <X size={20} />
-             </button>
+        <div className="bg-surface-container-lowest rounded-xl p-6 editorial-shadow">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-primary-fixed rounded-xl flex items-center justify-center text-on-primary-fixed-variant">
+                <FileText size={22} />
+              </div>
+              <div>
+                <p className="font-semibold text-on-surface text-sm">{selectedFile.name}</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB · PDF</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setSelectedFile(null)}
+              className="text-on-surface-variant hover:text-error transition-colors p-1.5 rounded-lg hover:bg-error-container/30"
+              disabled={isProcessing}
+              aria-label="Quitar archivo seleccionado"
+            >
+              <X size={18} />
+            </button>
           </div>
-          
+
           <button
             onClick={handleSubmit}
             disabled={isProcessing}
-            className="w-full py-2.5 bg-gradient-to-r from-primary to-blue-500 text-primary-foreground font-bold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed text-sm"
+            id="uploader-process-btn"
+            className="w-full py-3 bg-secondary-container text-on-secondary-container font-bold rounded-xl
+              shadow-editorial hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200
+              flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm"
           >
             {isProcessing ? (
               <>
@@ -124,13 +142,16 @@ const Uploader: React.FC<UploaderProps> = ({ onUpload, isProcessing }) => {
                 Analizando Documento...
               </>
             ) : (
-              "Procesar Horario"
+              <>
+                Procesar Horario
+                <ArrowRight size={16} />
+              </>
             )}
           </button>
-          
+
           {isProcessing && (
-            <p className="text-center text-[10px] text-primary mt-2 animate-pulse">
-              Esto puede tardar unos segundos dependiendo de la complejidad.
+            <p className="text-center text-xs text-on-surface-variant mt-3 animate-pulse">
+              Esto puede tardar unos segundos dependiendo del documento.
             </p>
           )}
         </div>

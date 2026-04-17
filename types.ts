@@ -34,6 +34,7 @@ export type ScheduleTheme = 'DEFAULT' | 'MINIMALIST' | 'SCHOOL' | 'NEON';
 export enum AppView {
   LANDING = 'LANDING',
   DASHBOARD = 'DASHBOARD',
+  ABOUT = 'ABOUT',
 }
 
 export enum Feature {
