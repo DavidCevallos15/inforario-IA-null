@@ -1,0 +1,142 @@
+/* Global styles — Inforario v3.0 "The Academic Curator" */
+
+:root {
+  --color-background:              #fbf9f8;
+  --color-surface:                 #fbf9f8;
+  --color-surface-bright:          #fbf9f8;
+  --color-surface-dim:             #dcd9d9;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low:   #f6f3f2;
+  --color-surface-container:       #f0eded;
+  --color-surface-container-high:  #eae8e7;
+  --color-surface-container-highest: #e4e2e1;
+  --color-surface-variant:         #e4e2e1;
+
+  --color-primary:                 #004925;
+  --color-primary-container:       #006334;
+  --color-primary-fixed:           #a1f5b8;
+  --color-primary-fixed-dim:       #86d89d;
+  --color-inverse-primary:         #86d89d;
+
+  --color-secondary:               #7c5800;
+  --color-secondary-container:     #fcb812;
+  --color-secondary-fixed:         #ffdea7;
+  --color-secondary-fixed-dim:     #ffbb1e;
+
+  --color-on-surface:              #1b1c1c;
+  --color-on-surface-variant:      #3f4940;
+  --color-on-primary:              #ffffff;
+  --color-on-primary-container:    #8adda1;
+  --color-on-primary-fixed:        #00210e;
+  --color-on-primary-fixed-variant: #00522a;
+  --color-on-secondary:            #ffffff;
+  --color-on-secondary-container:  #6a4b00;
+  --color-on-secondary-fixed:      #271900;
+  --color-on-secondary-fixed-variant: #5e4200;
+
+  --color-tertiary:                #393f43;
+  --color-tertiary-container:      #50565b;
+  --color-tertiary-fixed:          #dee3e8;
+  --color-tertiary-fixed-dim:      #c1c7cc;
+  --color-on-tertiary:             #ffffff;
+  --color-on-tertiary-container:   #c5cbd0;
+  --color-on-tertiary-fixed:       #161c20;
+
+  --color-outline:                 #6f7a70;
+  --color-outline-variant:         #bfc9be;
+  --color-error:                   #ba1a1a;
+  --color-error-container:         #ffdad6;
+  --color-on-error:                #ffffff;
+  --color-on-error-container:      #93000a;
+  --color-inverse-surface:         #303030;
+  --color-inverse-on-surface:      #f3f0f0;
+
+  /* Sombras tintadas UTM */
+  --shadow-editorial:    0 20px 40px rgba(0, 73, 37, 0.06);
+  --shadow-editorial-lg: 0 24px 48px rgba(0, 73, 37, 0.12);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #fbf9f8;
+  color: #1b1c1c;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Scrollbar personalizada — tono verde UTM */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f0eded;
+}
+::-webkit-scrollbar-thumb {
+  background: #bfc9be;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #004925;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Sombras editoriales */
+.editorial-shadow {
+  box-shadow: var(--shadow-editorial);
+}
+.editorial-shadow-lg {
+  box-shadow: var(--shadow-editorial-lg);
+}
+
+/* Animación pulse verde UTM (dorado como acento) */
+@keyframes pulse-utm {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(252, 184, 18, 0.4);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 6px rgba(252, 184, 18, 0);
+  }
+}
+.animate-pulse-utm {
+  animation: pulse-utm 3s ease-in-out infinite;
+}
+
+/* Tipos tipográficos editorial */
+.display-lg {
+  font-size: 3.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.headline-md {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.title-lg {
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.body-lg {
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+.label-md {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Selection brand color */
+::selection {
+  background: rgba(161, 245, 184, 0.4);
+  color: #004925;
+}

@@ -75,7 +75,7 @@ export const isSupabaseConfigured = () => {
 // --- Database Operations ---
 
 export const saveScheduleToDB = async (userId: string, schedule: Schedule) => {
-  if (!isSupabaseConfigured()) return null;
+  if (!isSupabaseConfigured() || !isUUID(userId)) return null;
 
   try {
     if (schedule.id) {
@@ -117,8 +117,20 @@ export const saveScheduleToDB = async (userId: string, schedule: Schedule) => {
   }
 };
 
+// Helper para validar si un string es un UUID válido
+const isUUID = (id: string) => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+};
+
 export const getUserSchedules = async (userId: string) => {
-  if (!isSupabaseConfigured()) return [];
+  if (!isSupabaseConfigured() || !userId) return [];
+  
+  // Si el ID es de desarrollo/invitado (no UUID), no consultamos la DB para evitar error 400
+  if (!isUUID(userId)) {
+    console.log("ℹ️ Usuario invitado: omitiendo consulta a base de datos remota.");
+    return [];
+  }
 
   try {
     const { data, error } = await supabase
@@ -176,7 +188,7 @@ export const deleteSchedule = async (scheduleId: string) => {
 };
 
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
-  if (!isSupabaseConfigured()) return null;
+  if (!isSupabaseConfigured() || !isUUID(userId)) return null;
 
   try {
     const { data, error } = await supabase

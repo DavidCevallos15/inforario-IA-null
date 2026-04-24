@@ -76,10 +76,16 @@ function capitalize(str: string): string {
 // Example: "1-59-2-04-A" → "Aula 204 - Piso 2"
 // Example: "1-59-3-06-LC" → "Lab. Computación 306 - Piso 3"
 function normalizeLocation(codAmb: string, tipo?: string): string {
-  if (!codAmb) return 'Sin asignar';
+  if (!codAmb || codAmb.trim() === '') return 'Sin asignar';
   
   const match = codAmb.match(/\d+-\d+-(\d+)-(\d+)-?([\w]*)/);
-  if (!match) return codAmb;
+  if (!match) {
+    // Para otras facultades (ej. administrativas) que no siguen el patrón 1-59...
+    const cleanCod = codAmb.replace(/;$/, '').trim();
+    if (tipo && cleanCod) return `${tipo} ${cleanCod}`;
+    if (tipo) return tipo;
+    return cleanCod;
+  }
   
   const floor = parseInt(match[1]);
   const room = match[2].padStart(2, '0');
@@ -452,22 +458,27 @@ function parseHorarioEntries(items: TextItem[]): ScheduleEntry[] {
     const endIdx = i < rawEntries.length - 1 ? rawEntries[i + 1].matchIndex : allText.length;
     const block = allText.substring(startIdx, endIdx);
     
-    // Extract COD. AMB.
     let location = 'Sin asignar';
+
+    if (/MATERIA\s+VIRTUAL/i.test(block)) {
+      location = 'Materia Virtual';
+    }
+
+    // Extract COD. AMB.
     const codAmbMatch = block.match(/COD\.\s*AMB\.?:?\s*(\S+)/i);
     const tipoMatch = block.match(/TIPO:\s*([^;]+)/i);
+    const lugarMatch = block.match(/LUGAR:\s*(.+?)(?:\s*\(|$|\n)/m);
     
     if (codAmbMatch) {
       const codAmb = codAmbMatch[1].replace(/;$/, '');
       const tipo = tipoMatch ? tipoMatch[1].trim() : '';
-      location = normalizeLocation(codAmb, tipo);
-    }
-    
-    // Detect if this specific entry is for a different faculty/location
-    const lugarMatch = block.match(/LUGAR:\s*(.+?)(?:\s*\(|$)/m);
-    let locationDetail = '';
-    if (lugarMatch) {
-      locationDetail = lugarMatch[1].trim();
+      const normLoc = normalizeLocation(codAmb, tipo);
+      if (normLoc !== 'Sin asignar') {
+         location = normLoc;
+      }
+    } else if (lugarMatch && location === 'Sin asignar') {
+      // Fallback para cuando no hay COD. AMB. pero sí LUGAR
+      location = lugarMatch[1].trim();
     }
     
     const dayName = entry.day.toLowerCase()

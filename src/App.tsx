@@ -15,8 +15,11 @@ import CustomizerSidebar from './components/CustomizerSidebar';
 import ProcessingView from './components/ProcessingView';
 import CalendarModal from './components/modals/CalendarModal';
 import AboutPage from './components/AboutPage';
+import LoginPage from './components/pages/LoginPage';
+import ProfilePage from './components/pages/ProfilePage';
 import { generateICS } from './services/icsExport';
-import { saveScheduleToDB, getUserSchedules, getScheduleById, deleteSchedule } from './services/supabase';
+import { saveScheduleToDB, getUserSchedules, getScheduleById, deleteSchedule, supabase, getUserProfile } from './services/supabase';
+import { User } from 'lucide-react';
 import './globals.css';
 
 // FeatureCard — Academic Curator
@@ -42,6 +45,10 @@ const App: React.FC = () => {
   const [view, setView] = useState<AppView>(AppView.LANDING);
   const [currentSchedule, setCurrentSchedule] = useState<Schedule | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Auth State
+  const [sessionUser, setSessionUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   
   // Device ID for persistence without login
   const [deviceId, setDeviceId] = useState<string>("");
@@ -88,10 +95,58 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    // Check active sessions and subscribe to auth changes
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSessionUser(session?.user ?? null);
+      if (session?.user) {
+        setDeviceId(session.user.id);
+        fetchUserProfile(session.user.id);
+      } else {
+        // Fallback to local device id
+        let id = localStorage.getItem('inforario_device_id');
+        if (!id) {
+          id = 'dev-' + Math.random().toString(36).substring(2, 11);
+          localStorage.setItem('inforario_device_id', id);
+        }
+        setDeviceId(id);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSessionUser(session?.user ?? null);
+      if (session?.user) {
+        setDeviceId(session.user.id);
+        fetchUserProfile(session.user.id);
+      } else {
+        let id = localStorage.getItem('inforario_device_id') || ('dev-' + Math.random().toString(36).substring(2, 11));
+        setDeviceId(id);
+        setUserProfile(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchUserProfile = async (uid: string) => {
+    const profile = await getUserProfile(uid);
+    if (profile) {
+      setUserProfile(profile);
+    }
+  };
+
+  useEffect(() => {
     if (deviceId) {
       fetchSchedules(deviceId);
     }
   }, [deviceId]);
+
+  useEffect(() => {
+    if (sessionUser && view === AppView.LOGIN) {
+      setView(AppView.LANDING);
+    }
+  }, [sessionUser, view]);
 
   // Handlers
   const handleFeatureAccess = (feature: Feature) => {
@@ -368,7 +423,7 @@ const App: React.FC = () => {
 
       doc.setFontSize(10 * fontScale);
       doc.setTextColor(style.textMain[0], style.textMain[1], style.textMain[2]);
-      const studentName = "INVITADO";
+      const studentName = userProfile?.full_name || sessionUser?.user_metadata?.full_name || "ESTUDIANTE INVITADO";
       const dateStr = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
       const academicPeriod = currentSchedule.academic_period || "SEPTIEMBRE 2025 - ENERO 2026";
       
@@ -576,6 +631,18 @@ const App: React.FC = () => {
                 Mi Horario
               </button>
             )}
+            
+            {sessionUser ? (
+              <button onClick={() => setView(AppView.PROFILE)} className="flex items-center gap-2 bg-primary-container text-on-primary-container px-4 py-2 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity">
+                <User size={16} />
+                <span className="hidden sm:block">{userProfile?.full_name?.split(' ')[0] || 'Perfil'}</span>
+              </button>
+            ) : (
+              <button onClick={() => setView(AppView.LOGIN)} className="flex items-center gap-2 border border-primary text-primary px-4 py-2 rounded-full font-semibold text-sm hover:bg-primary/5 transition-colors">
+                Iniciar Sesión
+              </button>
+            )}
+
             <a href="https://wa.me/593979107716?text=Hola,%20quiero%20dejar%20feedback%20sobre%20Inforario" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-primary text-on-primary px-5 py-2 rounded-full font-semibold text-sm hover:bg-primary-container transition-colors duration-200">
               <MessageCircle size={14} className="hidden sm:block" />
               <span className="hidden sm:block">Feedback</span>
@@ -586,6 +653,10 @@ const App: React.FC = () => {
       </nav>
 
       <main className="flex-grow max-w-7xl mx-auto px-4 py-2 md:py-4 w-full">
+
+        {view === AppView.LOGIN && <LoginPage onLogin={() => setView(AppView.LANDING)} onBack={() => setView(AppView.LANDING)} />}
+        
+        {view === AppView.PROFILE && <ProfilePage onBack={() => setView(AppView.LANDING)} onLogout={() => setView(AppView.LANDING)} />}
 
         {view === AppView.ABOUT && <AboutPage />}
 
@@ -624,7 +695,7 @@ const App: React.FC = () => {
             {/* Horarios guardados */}
             {savedSchedules.length > 0 && (
               <motion.div custom={5} variants={fadeUpVariants} initial="hidden" animate="visible" className="w-full max-w-4xl mt-14 px-4">
-                <ScheduleList schedules={savedSchedules} onOpen={handleOpenSchedule} onDelete={handleDeleteSchedule} onBulkDelete={handleBulkDelete} onLogout={() => {}} onCreateNew={() => setShowUploaderInDashboard(true)} />
+                <ScheduleList schedules={savedSchedules} onOpen={handleOpenSchedule} onDelete={handleDeleteSchedule} onBulkDelete={handleBulkDelete} onLogout={() => supabase.auth.signOut()} onCreateNew={() => setShowUploaderInDashboard(true)} />
               </motion.div>
             )}
 
@@ -640,7 +711,7 @@ const App: React.FC = () => {
         {view === AppView.DASHBOARD && currentSchedule && (
           <div className="animate-in fade-in duration-500 pt-2 relative z-10">
             {/* Header del horario */}
-            <div className="bg-surface-container-lowest rounded-xl editorial-shadow p-4 mb-4 relative z-20">
+            <div className="bg-surface-container-lowest rounded-xl editorial-shadow p-4 mb-4 relative z-50">
               <div className="flex flex-col lg:flex-row justify-between gap-4 items-start lg:items-center">
                 <div className="flex items-start gap-4 w-full lg:w-auto">
                   <div className="hidden sm:flex w-12 h-12 bg-primary rounded-xl items-center justify-center text-on-primary shrink-0">
@@ -741,6 +812,7 @@ const App: React.FC = () => {
            isOpen={calendarModalOpen} 
            onClose={() => setCalendarModalOpen(false)} 
            onConfirm={(s, e) => generateICS(currentSchedule, s, e)} 
+           schedule={currentSchedule}
         />
       )}
       

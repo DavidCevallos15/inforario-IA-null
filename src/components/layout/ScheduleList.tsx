@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Calendar, Trash2, Plus, ArrowLeft, Check, CheckSquare } from 'lucide-react';
-import { UserProfile } from '../types';
+import { UserProfile } from '../../types';
 
 interface ScheduleSummary {
   id: string;

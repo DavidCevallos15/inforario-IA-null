@@ -10,20 +10,20 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.4.2",
+    "@supabase/supabase-js": "^2.103.3",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.0.24",
+    "jspdf": "^2.5.2",
+    "lucide-react": "^0.554.0",
+    "pdfjs-dist": "^4.10.38",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "pdfjs-dist": "^4.10.38",
-    "tesseract.js": "^5.1.1",
-    "lucide-react": "^0.554.0",
-    "@supabase/supabase-js": "^2.84.0",
-    "jspdf": "^2.5.2",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^2.3.0",
-    "framer-motion": "^11.0.24",
     "simplex-noise": "^4.0.1",
-    "@react-three/drei": "^10.7.7",
-    "three": "^0.181.2",
-    "@react-three/fiber": "^9.4.2"
+    "tailwind-merge": "^2.3.0",
+    "tesseract.js": "^5.1.1",
+    "three": "^0.181.2"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

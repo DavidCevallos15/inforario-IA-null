@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { X, Mail, Lock, Eye, EyeOff, User, GraduationCap, Check, ArrowLeft, AlertCircle } from 'lucide-react';
-import { signInWithEmail, signUpWithEmail, resetPasswordForEmail, isSupabaseConfigured } from '../services/supabase';
+import { signInWithEmail, signUpWithEmail, resetPasswordForEmail, isSupabaseConfigured } from '../../services/supabase';
 
-interface AuthModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onLogin: () => void; // Callback after successful login
+interface LoginPageProps {
+  onLogin: () => void;
+  onBack: () => void;
 }
 
 type AuthView = 'LOGIN' | 'REGISTER' | 'FORGOT_PASSWORD';
 
-const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
   const [view, setView] = useState<AuthView>('LOGIN');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,9 +40,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
     }
   }, [password, view]);
 
+  // isPasswordValid is computed
   const isPasswordValid = Object.values(pwdValidations).every(Boolean);
-
-  if (!isOpen) return null;
 
   const resetState = () => {
     setError(null);
@@ -66,17 +64,22 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
        setTimeout(() => {
          setLoading(false);
          onLogin();
-         onClose();
+         onBack();
        }, 1000);
        return;
     }
 
     try {
       if (view === 'LOGIN') {
+        if (!email.endsWith('@utm.edu.ec')) {
+          throw new Error("Debes usar tu correo institucional (@utm.edu.ec) para iniciar sesión.");
+        }
         await signInWithEmail(email, password);
         onLogin(); // App.tsx listener will handle session update
-        onClose();
       } else if (view === 'REGISTER') {
+        if (!email.endsWith('@utm.edu.ec')) {
+          throw new Error("El registro es exclusivo para correos institucionales de la UTM (@utm.edu.ec).");
+        }
         if (!isPasswordValid) {
           throw new Error("La contraseña no cumple con los requisitos.");
         }
@@ -107,20 +110,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      {/* Modal Container */}
-      <div className="bg-card rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.6)] w-full max-w-sm overflow-hidden relative flex flex-col max-h-[90vh] border border-muted">
+    <div className="min-h-[calc(100vh-80px)] w-full flex items-center justify-center p-4 relative z-10">
+      {/* Container */}
+      <div className="bg-surface-container-lowest rounded-3xl editorial-shadow w-full max-w-md max-h-[calc(100vh-40px)] overflow-y-auto relative flex flex-col border border-outline-variant/15">
         
-        {/* Close Button */}
+        {/* Close/Back Button */}
         <button 
-          onClick={onClose} 
-          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors z-20"
+          onClick={onBack} 
+          className="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface transition-colors z-20 bg-surface-container p-2 rounded-full"
         >
           <X size={20} />
         </button>
 
-        {/* Scrollable Content Area */}
-        <div className="p-6 pt-8 overflow-y-auto no-scrollbar">
+        {/* Content Area */}
+        <div className="p-8">
           
           {/* Header Section */}
           <div className="text-center mb-5">
@@ -298,4 +301,4 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
   );
 };
 
-export default AuthModal;
+export default LoginPage;
