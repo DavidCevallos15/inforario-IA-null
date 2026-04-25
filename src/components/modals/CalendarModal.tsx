@@ -1,22 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, X, Download, CheckCircle2, RefreshCw } from 'lucide-react';
-import { syncScheduleToCalendar, initializeGoogleApi } from '../../services/googleCalendar';
+import { Schedule } from '../../types';
+import { useCalendarStatus } from '../../hooks/useCalendarStatus';
+import { buildCalendarEventsFromSchedule, syncCalendarEvents } from '../../services/googleCalendarEdge';
 
 interface CalendarModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (startDate: Date, endDate: Date) => void;
-  schedule: any; // The schedule to sync
+  schedule: Schedule;
 }
 
 const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, onConfirm, schedule }) => {
   const [syncing, setSyncing] = useState(false);
+  const {
+    isLinked,
+    isLoading: statusLoading,
+    error: statusError,
+    refreshStatus,
+  } = useCalendarStatus();
 
   useEffect(() => {
     if (isOpen) {
-      initializeGoogleApi().catch(err => console.error("Error inicializando Google API:", err));
+      void refreshStatus();
     }
-  }, [isOpen]);
+  }, [isOpen, refreshStatus]);
 
   if (!isOpen) return null;
 
@@ -35,6 +43,11 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, onConfir
   };
 
   const handleGoogleSync = async () => {
+    if (!isLinked) {
+      alert('Tu cuenta no está conectada a Google Calendar. Conecta Google primero para sincronizar.');
+      return;
+    }
+
     setSyncing(true);
     const today = new Date();
     const start = new Date(today);
@@ -45,14 +58,15 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, onConfir
     end.setDate(end.getDate() + 15);
 
     try {
-      const res = await syncScheduleToCalendar(schedule, start, end);
+      const events = buildCalendarEventsFromSchedule(schedule, start, end);
+      const res = await syncCalendarEvents({ events, calendarId: 'primary' });
       if (res.success) {
         alert(res.message);
         onClose();
       } else {
         alert("Error: " + res.message);
       }
-    } catch (e: any) {
+    } catch {
       alert("Error en la sincronización.");
     } finally {
       setSyncing(false);
@@ -92,7 +106,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, onConfir
             <div className="flex flex-col gap-3">
               <button 
                 onClick={handleGoogleSync}
-                disabled={syncing}
+                disabled={syncing || statusLoading}
                 className="w-full py-3 bg-surface-container text-on-surface border border-outline-variant/15 font-bold rounded-xl hover:bg-surface-container-high transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-70"
               >
                 {syncing ? <RefreshCw size={18} className="animate-spin" /> : (
@@ -105,6 +119,14 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, onConfir
                 )}
                 Sincronizar con Google Calendar
               </button>
+
+              {!statusLoading && !isLinked && (
+                <p className="text-xs text-error px-1">Google Calendar no está vinculado en tu cuenta.</p>
+              )}
+
+              {statusError && (
+                <p className="text-xs text-error px-1">{statusError}</p>
+              )}
               
               <button 
                 onClick={handleSubmit}

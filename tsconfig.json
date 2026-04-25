@@ -11,7 +11,9 @@
     ],
     "skipLibCheck": true,
     "types": [
-      "node"
+      "node",
+      "gapi",
+      "gapi.calendar"
     ],
     "moduleResolution": "bundler",
     "isolatedModules": true,

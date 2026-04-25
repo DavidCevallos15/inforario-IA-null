@@ -57,8 +57,12 @@ try {
 // Ensure the exported supabase object has the expected structure even if client fails
 export const supabase = client || {
   from: () => createDummyBuilder(),
+  functions: {
+    invoke: () => Promise.resolve({ data: null, error: { message: "Database not configured" } })
+  },
   auth: {
     getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+    getUser: () => Promise.resolve({ data: { user: null }, error: null }),
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } }, error: null }),
     signInWithPassword: () => Promise.resolve({ error: { message: "Database not configured" } }),
     signUp: () => Promise.resolve({ error: { message: "Database not configured" } }),
