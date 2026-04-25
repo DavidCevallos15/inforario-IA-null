@@ -611,6 +611,8 @@ const App: React.FC = () => {
     }),
   };
 
+  const displayName = userProfile?.full_name || sessionUser?.user_metadata?.full_name || sessionUser?.email?.split('@')[0] || 'estudiante';
+
   const Content = () => (
     <div className="min-h-screen flex flex-col bg-background text-on-surface relative z-10 pt-20">
       <nav className="fixed top-0 left-0 z-50 w-full h-20" style={{background:'rgba(255,255,255,0.80)',backdropFilter:'blur(20px)',boxShadow:'0 20px 40px rgba(0,73,37,0.06)'}}>
@@ -665,38 +667,92 @@ const App: React.FC = () => {
             {/* Blob decorativo estático */}
             <div className="fixed top-0 right-0 w-[600px] h-[600px] rounded-full -z-10 pointer-events-none" style={{background:'radial-gradient(circle, rgba(0,73,37,0.04) 0%, transparent 70%)'}} />
 
-            {/* Hero */}
-            <div className="w-full max-w-4xl mx-auto pt-12 pb-10 px-4 text-center">
-              <motion.div custom={0} variants={fadeUpVariants} initial="hidden" animate="visible">
-                <span className="label-md text-secondary block mb-6">GESTIÓN ACADÉMICA UTM</span>
-              </motion.div>
-              <motion.h1 custom={1} variants={fadeUpVariants} initial="hidden" animate="visible" className="display-lg text-on-surface mb-4 max-w-3xl mx-auto">
-                Transforma tu horario SGA en una{' '}
-                <span className="italic text-primary">agenda digital impecable.</span>
-              </motion.h1>
-              <motion.p custom={2} variants={fadeUpVariants} initial="hidden" animate="visible" className="body-lg text-on-surface-variant max-w-xl mx-auto mb-8">
-                Carga tu PDF del reporte de matrícula UTM y obtén un horario digital interactivo en segundos.
-              </motion.p>
-              <motion.div custom={3} variants={fadeUpVariants} initial="hidden" animate="visible" className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-                <button onClick={() => document.getElementById('uploader-select-btn')?.click()} className="bg-secondary-container text-on-secondary-container px-8 py-4 rounded-xl font-bold text-lg shadow-editorial hover:scale-105 active:scale-95 transition-transform duration-200">
-                  Cargar mi Horario
-                </button>
-                <button onClick={() => setView(AppView.ABOUT)} className="text-on-surface-variant font-semibold hover:text-primary transition-colors duration-200 flex items-center gap-2">
-                  Ver cómo funciona →
-                </button>
-              </motion.div>
-            </div>
+            {sessionUser ? (
+              <>
+                <motion.div custom={0} variants={fadeUpVariants} initial="hidden" animate="visible" className="w-full max-w-5xl mx-auto pt-10 px-4">
+                  <div className="bg-surface-container-lowest rounded-[1.8rem] p-6 md:p-8 editorial-shadow border border-outline-variant/20">
+                    <span className="label-md text-secondary block mb-3">GESTOR DE HORARIOS</span>
+                    <h1 className="headline-md text-on-surface mb-2">Bienvenido, <span className="text-primary">{displayName}</span></h1>
+                    <p className="body-lg text-on-surface-variant mb-6">Aquí puedes ver tus horarios guardados, crear uno nuevo y exportarlos cuando lo necesites.</p>
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => setShowUploaderInDashboard(true)}
+                        className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-semibold hover:bg-primary-container transition-colors"
+                      >
+                        Crear mi horario
+                      </button>
+                      <button
+                        onClick={() => setView(AppView.ABOUT)}
+                        className="bg-surface-container text-on-surface px-5 py-2.5 rounded-xl font-semibold hover:bg-surface-container-high transition-colors"
+                      >
+                        Ver guía
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
 
-            {/* Uploader */}
-            <motion.div custom={4} variants={fadeUpVariants} initial="hidden" animate="visible" className="w-full max-w-2xl px-4">
-              <Uploader onUpload={handleUpload} isProcessing={isProcessing} />
-            </motion.div>
+                <motion.div custom={1} variants={fadeUpVariants} initial="hidden" animate="visible" className="w-full max-w-5xl mt-8 px-4">
+                  <h2 className="title-lg text-on-surface mb-4">Tus horarios</h2>
 
-            {/* Horarios guardados */}
-            {savedSchedules.length > 0 && (
-              <motion.div custom={5} variants={fadeUpVariants} initial="hidden" animate="visible" className="w-full max-w-4xl mt-14 px-4">
-                <ScheduleList schedules={savedSchedules} onOpen={handleOpenSchedule} onDelete={handleDeleteSchedule} onBulkDelete={handleBulkDelete} onLogout={() => supabase.auth.signOut()} onCreateNew={() => setShowUploaderInDashboard(true)} />
-              </motion.div>
+                  {savedSchedules.length > 0 ? (
+                    <ScheduleList
+                      schedules={savedSchedules}
+                      onOpen={handleOpenSchedule}
+                      onDelete={handleDeleteSchedule}
+                      onBulkDelete={handleBulkDelete}
+                      onLogout={() => supabase.auth.signOut()}
+                      onCreateNew={() => setShowUploaderInDashboard(true)}
+                    />
+                  ) : (
+                    <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-8 text-center editorial-shadow">
+                      <h3 className="text-2xl font-bold text-on-surface mb-2">Crea tu horario</h3>
+                      <p className="text-on-surface-variant mb-6">Aún no tienes horarios guardados. Sube tu PDF del SGA para generar tu primer horario.</p>
+                    </div>
+                  )}
+                </motion.div>
+
+                {(showUploaderInDashboard || savedSchedules.length === 0) && (
+                  <motion.div custom={2} variants={fadeUpVariants} initial="hidden" animate="visible" className="w-full max-w-2xl mt-8 px-4">
+                    <Uploader onUpload={handleUpload} isProcessing={isProcessing} />
+                  </motion.div>
+                )}
+              </>
+            ) : (
+              <>
+                {/* Hero */}
+                <div className="w-full max-w-4xl mx-auto pt-12 pb-10 px-4 text-center">
+                  <motion.div custom={0} variants={fadeUpVariants} initial="hidden" animate="visible">
+                    <span className="label-md text-secondary block mb-6">GESTIÓN ACADÉMICA UTM</span>
+                  </motion.div>
+                  <motion.h1 custom={1} variants={fadeUpVariants} initial="hidden" animate="visible" className="display-lg text-on-surface mb-4 max-w-3xl mx-auto">
+                    Transforma tu horario SGA en una{' '}
+                    <span className="italic text-primary">agenda digital impecable.</span>
+                  </motion.h1>
+                  <motion.p custom={2} variants={fadeUpVariants} initial="hidden" animate="visible" className="body-lg text-on-surface-variant max-w-xl mx-auto mb-8">
+                    Carga tu PDF del reporte de matrícula UTM y obtén un horario digital interactivo en segundos.
+                  </motion.p>
+                  <motion.div custom={3} variants={fadeUpVariants} initial="hidden" animate="visible" className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+                    <button onClick={() => document.getElementById('uploader-select-btn')?.click()} className="bg-secondary-container text-on-secondary-container px-8 py-4 rounded-xl font-bold text-lg shadow-editorial hover:scale-105 active:scale-95 transition-transform duration-200">
+                      Cargar mi Horario
+                    </button>
+                    <button onClick={() => setView(AppView.ABOUT)} className="text-on-surface-variant font-semibold hover:text-primary transition-colors duration-200 flex items-center gap-2">
+                      Ver cómo funciona →
+                    </button>
+                  </motion.div>
+                </div>
+
+                {/* Uploader */}
+                <motion.div custom={4} variants={fadeUpVariants} initial="hidden" animate="visible" className="w-full max-w-2xl px-4">
+                  <Uploader onUpload={handleUpload} isProcessing={isProcessing} />
+                </motion.div>
+
+                {/* Horarios guardados */}
+                {savedSchedules.length > 0 && (
+                  <motion.div custom={5} variants={fadeUpVariants} initial="hidden" animate="visible" className="w-full max-w-4xl mt-14 px-4">
+                    <ScheduleList schedules={savedSchedules} onOpen={handleOpenSchedule} onDelete={handleDeleteSchedule} onBulkDelete={handleBulkDelete} onLogout={() => supabase.auth.signOut()} onCreateNew={() => setShowUploaderInDashboard(true)} />
+                  </motion.div>
+                )}
+              </>
             )}
 
             {/* Feature Cards */}

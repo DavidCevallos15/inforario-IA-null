@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Mail, Lock, Eye, EyeOff, User, GraduationCap, Check, ArrowLeft, AlertCircle } from 'lucide-react';
 import { signInWithEmail, signUpWithEmail, resetPasswordForEmail, isSupabaseConfigured } from '../../services/supabase';
 
@@ -49,10 +49,49 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
     setLoading(false);
   };
 
-  const handleSwitchView = (newView: AuthView) => {
-    resetState();
-    setView(newView);
+  const resetFormFields = () => {
+    setEmail("");
+    setPassword("");
+    setFullName("");
+    setShowPassword(false);
+    setPwdValidations({
+      length: false,
+      uppercase: false,
+      lowercase: false,
+      number: false
+    });
   };
+
+  const resetAuthFlow = useCallback((nextView: AuthView = 'LOGIN') => {
+    resetState();
+    resetFormFields();
+    setView(nextView);
+  }, []);
+
+  const handleSwitchView = (newView: AuthView) => {
+    resetAuthFlow(newView);
+  };
+
+  useEffect(() => {
+    // Ensure each open starts clean in LOGIN view.
+    resetAuthFlow('LOGIN');
+  }, [resetAuthFlow]);
+
+  const handleClose = useCallback(() => {
+    resetAuthFlow('LOGIN');
+    onBack();
+  }, [onBack, resetAuthFlow]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleClose]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,12 +130,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
       }
     } catch (err: any) {
       console.error(err);
-      if (err.message.includes("User already registered")) {
+      const msg = err?.message || "";
+      if (msg.includes("User already registered")) {
         setError("Este correo ya está registrado. Por favor, inicia sesión.");
-      } else if (err.message.includes("Invalid login")) {
+      } else if (msg.includes("Invalid login")) {
         setError("Credenciales incorrectas.");
+      } else if (msg.includes("Email address not authorized")) {
+        setError("Tu proyecto usa el SMTP por defecto de Supabase: solo envía a correos autorizados del equipo. Configura un SMTP propio para enviar a estudiantes.");
+      } else if (msg.toLowerCase().includes("rate limit") || msg.toLowerCase().includes("too many requests")) {
+        setError("Límite de envíos alcanzado temporalmente. Intenta más tarde o revisa los límites de Auth en Supabase.");
       } else {
-        setError(err.message || "Ocurrió un error. Inténtalo de nuevo.");
+        setError(msg || "Ocurrió un error. Inténtalo de nuevo.");
       }
     } finally {
       if (view !== 'REGISTER' && view !== 'FORGOT_PASSWORD') {
@@ -116,7 +160,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
         
         {/* Close/Back Button */}
         <button 
-          onClick={onBack} 
+          onClick={handleClose} 
           className="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface transition-colors z-20 bg-surface-container p-2 rounded-full"
         >
           <X size={20} />
@@ -127,11 +171,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
           
           {/* Header Section */}
           <div className="text-center mb-5">
-            <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-[0_0_15px_rgba(0,240,255,0.4)]">
-              <GraduationCap size={28} className="text-primary-foreground" />
+            <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-editorial">
+              <GraduationCap size={28} className="text-on-primary" />
             </div>
-            <h2 className="text-xl font-bold text-foreground">Bienvenido a Inforario</h2>
-            <p className="text-xs text-muted-foreground mt-1">Gestiona tu horario universitario de manera inteligente</p>
+            <h2 className="text-xl font-bold text-on-surface">Bienvenido a Inforario</h2>
+            <p className="text-xs text-on-surface-variant mt-1">Gestiona tu horario universitario de manera inteligente</p>
           </div>
 
           {/* View: Forgot Password Header Override */}
@@ -139,25 +183,25 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
              <div className="mb-5">
                 <button 
                   onClick={() => handleSwitchView('LOGIN')}
-                  className="flex items-center text-xs text-muted-foreground hover:text-foreground mb-4 transition-colors"
+                  className="flex items-center text-xs text-on-surface-variant hover:text-primary mb-4 transition-colors"
                 >
                   <ArrowLeft size={14} className="mr-1" /> Volver al inicio
                 </button>
-                <h3 className="text-lg font-bold text-foreground">Recuperar Contraseña</h3>
-                <p className="text-xs text-muted-foreground">Ingresa tu correo para recibir un enlace de recuperación.</p>
+                <h3 className="text-lg font-bold text-on-surface">Recuperar Contraseña</h3>
+                <p className="text-xs text-on-surface-variant">Ingresa tu correo para recibir un enlace de recuperación.</p>
              </div>
           ) : (
             /* Tabs */
-            <div className="flex bg-background border border-muted p-1 rounded-xl mb-5">
+            <div className="flex bg-surface-container border border-outline-variant/30 p-1 rounded-xl mb-5">
               <button 
                 onClick={() => handleSwitchView('LOGIN')}
-                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${view === 'LOGIN' ? 'bg-card text-foreground shadow-sm border border-muted' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${view === 'LOGIN' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-primary'}`}
               >
                 Iniciar Sesión
               </button>
               <button 
                 onClick={() => handleSwitchView('REGISTER')}
-                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${view === 'REGISTER' ? 'bg-card text-foreground shadow-sm border border-muted' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${view === 'REGISTER' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-primary'}`}
               >
                 Registrarse
               </button>
@@ -172,7 +216,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
             </div>
           )}
           {successMsg && (
-            <div className="mb-4 p-3 bg-green-900/20 text-green-400 text-xs rounded-lg flex items-start gap-2 border border-green-900/30">
+            <div className="mb-4 p-3 bg-primary-fixed text-on-primary-fixed-variant text-xs rounded-lg flex items-start gap-2 border border-primary-fixed-dim/50">
               <Check size={14} className="mt-0.5 shrink-0" />
               <span>{successMsg}</span>
             </div>
@@ -183,16 +227,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
             {/* Full Name (Register Only) */}
             {view === 'REGISTER' && (
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">Nombre completo</label>
+                <label className="text-xs font-semibold text-on-surface-variant">Nombre completo</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
                   <input 
                     type="text" 
                     required={view === 'REGISTER'}
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Juan Pérez"
-                    className="w-full pl-9 pr-4 py-2.5 bg-background border border-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-foreground placeholder:text-muted-foreground/50"
+                    className="w-full pl-9 pr-4 py-2.5 bg-surface-container-lowest border border-outline-variant/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-on-surface placeholder:text-on-surface-variant/60"
                   />
                 </div>
               </div>
@@ -200,16 +244,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
 
             {/* Email */}
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-muted-foreground">Correo electrónico</label>
+              <label className="text-xs font-semibold text-on-surface-variant">Correo electrónico</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
                 <input 
                   type="email" 
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="estudiante@utm.edu.ec"
-                  className="w-full pl-9 pr-4 py-2.5 bg-background border border-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-foreground placeholder:text-muted-foreground/50"
+                  className="w-full pl-9 pr-4 py-2.5 bg-surface-container-lowest border border-outline-variant/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-on-surface placeholder:text-on-surface-variant/60"
                 />
               </div>
             </div>
@@ -217,21 +261,21 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
             {/* Password */}
             {view !== 'FORGOT_PASSWORD' && (
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">Contraseña</label>
+                <label className="text-xs font-semibold text-on-surface-variant">Contraseña</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
                   <input 
                     type={showPassword ? "text" : "password"} 
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-9 pr-10 py-2.5 bg-background border border-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-foreground placeholder:text-muted-foreground/50"
+                    className="w-full pl-9 pr-10 py-2.5 bg-surface-container-lowest border border-outline-variant/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-on-surface placeholder:text-on-surface-variant/60"
                   />
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary"
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -244,21 +288,21 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
               <div className="space-y-2 pt-1">
                 <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
                    <div 
-                      className={`h-full transition-all duration-300 ${isPasswordValid ? 'bg-green-500' : 'bg-primary'}`}
+                      className={`h-full transition-all duration-300 ${isPasswordValid ? 'bg-primary-container' : 'bg-primary'}`}
                       style={{ width: `${(Object.values(pwdValidations).filter(Boolean).length / 4) * 100}%` }}
                    ></div>
                 </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
-                  <span className={`flex items-center gap-1 ${pwdValidations.length ? 'text-green-400 font-medium' : ''}`}>
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-on-surface-variant">
+                  <span className={`flex items-center gap-1 ${pwdValidations.length ? 'text-primary-container font-medium' : ''}`}>
                     {pwdValidations.length ? <Check size={10} /> : null} 8+ caracteres
                   </span>
-                  <span className={`flex items-center gap-1 ${pwdValidations.uppercase ? 'text-green-400 font-medium' : ''}`}>
+                  <span className={`flex items-center gap-1 ${pwdValidations.uppercase ? 'text-primary-container font-medium' : ''}`}>
                     {pwdValidations.uppercase ? <Check size={10} /> : null} Mayúscula
                   </span>
-                  <span className={`flex items-center gap-1 ${pwdValidations.lowercase ? 'text-green-400 font-medium' : ''}`}>
+                  <span className={`flex items-center gap-1 ${pwdValidations.lowercase ? 'text-primary-container font-medium' : ''}`}>
                     {pwdValidations.lowercase ? <Check size={10} /> : null} Minúscula
                   </span>
-                  <span className={`flex items-center gap-1 ${pwdValidations.number ? 'text-green-400 font-medium' : ''}`}>
+                  <span className={`flex items-center gap-1 ${pwdValidations.number ? 'text-primary-container font-medium' : ''}`}>
                     {pwdValidations.number ? <Check size={10} /> : null} Número
                   </span>
                 </div>
@@ -271,7 +315,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
                 <button 
                   type="button" 
                   onClick={() => handleSwitchView('FORGOT_PASSWORD')}
-                  className="text-xs text-primary hover:text-cyan-300 font-medium"
+                  className="text-xs text-primary hover:text-primary-container font-medium"
                 >
                   ¿Olvidaste tu contraseña?
                 </button>
@@ -282,19 +326,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
             <button 
               type="submit"
               disabled={loading || (view === 'REGISTER' && !isPasswordValid)}
-              className="w-full py-2.5 bg-primary hover:bg-cyan-300 text-primary-foreground font-bold rounded-xl shadow-[0_0_15px_rgba(0,240,255,0.3)] transition-all transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+              className="w-full py-2.5 bg-primary hover:bg-primary-container text-on-primary font-bold rounded-xl shadow-editorial transition-all transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed mt-2"
             >
               {loading ? (
-                <span className="inline-block w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></span>
+                <span className="inline-block w-4 h-4 border-2 border-on-primary/30 border-t-on-primary rounded-full animate-spin"></span>
               ) : (
                 view === 'LOGIN' ? 'Iniciar Sesión' : view === 'REGISTER' ? 'Crear cuenta' : 'Enviar enlace'
               )}
             </button>
           </form>
 
-          <div className="mt-4 text-center text-[10px] text-muted-foreground">
-            Al {view === 'REGISTER' ? 'crear tu cuenta' : 'iniciar sesión'}, aceptas nuestros <a href="#" className="underline hover:text-foreground">términos de servicio</a>
-          </div>
+         
         </div>
       </div>
     </div>

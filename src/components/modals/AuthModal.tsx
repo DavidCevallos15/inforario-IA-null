@@ -289,9 +289,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
             </button>
           </form>
 
-          <div className="mt-4 text-center text-[10px] text-muted-foreground">
-            Al {view === 'REGISTER' ? 'crear tu cuenta' : 'iniciar sesión'}, aceptas nuestros <a href="#" className="underline hover:text-foreground">términos de servicio</a>
-          </div>
         </div>
       </div>
     </div>
