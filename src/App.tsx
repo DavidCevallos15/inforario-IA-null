@@ -410,12 +410,14 @@ const App: React.FC = () => {
     setIsExporting(true);
 
     try {
-      // Initialize jsPDF Landscape A4
+      // Initialize jsPDF Landscape A3 so the full schedule fits on a single page.
       const doc = new jsPDF({
         orientation: "landscape",
         unit: "mm",
-        format: "a4",
+        format: "a3",
       });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
 
       // --- Theme Configurations ---
       const themeConfig = {
@@ -466,10 +468,10 @@ const App: React.FC = () => {
 
       // Set Page Background
       doc.setFillColor(style.bg[0], style.bg[1], style.bg[2]);
-      doc.rect(0, 0, 297, 210, "F");
+      doc.rect(0, 0, pageWidth, pageHeight, "F");
 
       // --- 1. Header Section ---
-      const centerX = 148.5; // A4 Width 297mm / 2
+      const centerX = pageWidth / 2;
 
       doc.setFont(style.font, "bold");
       doc.setFontSize(18 * fontScale);
@@ -502,13 +504,13 @@ const App: React.FC = () => {
 
       doc.text(`Estudiante: ${studentName}`, 15, 32);
       doc.text(`Período: ${academicPeriod}`, centerX, 32, { align: "center" });
-      doc.text(`Generado: ${dateStr}`, 282, 32, { align: "right" });
+      doc.text(`Generado: ${dateStr}`, pageWidth - 15, 32, { align: "right" });
 
       // --- 2. Grid Configuration ---
       const startX = 15;
       const startY = 40;
       const margin = 15;
-      const usableWidth = 297 - margin * 2;
+      const usableWidth = pageWidth - margin * 2;
 
       const regularSessions = currentSchedule.sessions.filter(
         (s) => !s.isVirtual && s.day && s.startTime && s.endTime,
@@ -519,6 +521,7 @@ const App: React.FC = () => {
 
       const timeColWidth = 20;
       const dayColWidth = (usableWidth - timeColWidth) / 5; // 5 Days
+      const headerHeight = 10;
 
       let minHour = 7;
       let maxHour = 18;
@@ -537,9 +540,21 @@ const App: React.FC = () => {
         maxHour = Math.max(minHour + 4, max + 1);
       }
 
-      const hourHeight = Math.min(15 * fontScale, 20);
+      const baseHourHeight = Math.min(15 * fontScale, 20);
+      const virtualColumns = virtualSessions.length >= 5 ? 3 : Math.min(2, Math.max(1, virtualSessions.length));
+      const virtualCardHeight = virtualSessions.length > 0 ? 15 : 0;
+      const virtualRows = virtualSessions.length > 0 ? Math.ceil(virtualSessions.length / virtualColumns) : 0;
+      const virtualSectionHeight = virtualSessions.length > 0
+        ? 8 + virtualRows * (virtualCardHeight + 4) + 2
+        : 0;
+
+      const availableGridHeight = pageHeight - startY - headerHeight - virtualSectionHeight - 12;
+      const hourHeight = Math.min(
+        baseHourHeight,
+        availableGridHeight / Math.max(1, maxHour - minHour)
+      );
+      const exportScale = Math.max(0.85, Math.min(1, hourHeight / baseHourHeight));
       const totalGridHeight = (maxHour - minHour) * hourHeight;
-      const headerHeight = 10;
 
       // --- 3. Draw Table Headers ---
       doc.setFillColor(
@@ -558,7 +573,7 @@ const App: React.FC = () => {
         style.headerText[1],
         style.headerText[2],
       );
-      doc.setFontSize(10 * fontScale);
+      doc.setFontSize(10 * fontScale * exportScale);
       doc.setFont(style.font, "bold");
 
       doc.text("Hora", startX + timeColWidth / 2, startY + 6.5, {
@@ -574,7 +589,7 @@ const App: React.FC = () => {
 
       // --- 4. Draw Grid Lines & Time Labels ---
       doc.setTextColor(style.timeText[0], style.timeText[1], style.timeText[2]);
-      doc.setFontSize(8 * fontScale);
+      doc.setFontSize(8 * fontScale * exportScale);
       doc.setFont(style.font, "normal");
 
       doc.setDrawColor(
@@ -693,7 +708,7 @@ const App: React.FC = () => {
           doc.setTextColor(255, 255, 255);
         }
 
-        const titleFontSize = 10 * fontScale;
+        const titleFontSize = 10 * fontScale * exportScale;
         doc.setFontSize(titleFontSize);
         doc.setFont(style.font, "bold");
 
@@ -706,9 +721,9 @@ const App: React.FC = () => {
         );
         doc.text(subjectLines, textX, textY);
 
-        textY += subjectLines.length * (titleFontSize / 2) + 0.5;
+        textY += subjectLines.length * (titleFontSize * 0.35) + 0.6;
 
-        const detailsFontSize = 8 * fontScale;
+        const detailsFontSize = 8 * fontScale * exportScale;
         doc.setFont(style.font, "normal");
         doc.setFontSize(detailsFontSize);
 
@@ -720,17 +735,17 @@ const App: React.FC = () => {
               ? session.subject_faculty.substring(0, 27) + "..."
               : session.subject_faculty;
           doc.text(facultyText, textX, textY);
-          textY += detailsFontSize / 2 + 0.5;
+          textY += detailsFontSize * 0.35 + 0.6;
           doc.setFont(style.font, "normal");
           doc.setFontSize(detailsFontSize);
         }
 
         doc.text(`${session.startTime} - ${session.endTime}`, textX, textY);
-        textY += detailsFontSize / 2 + 0.5;
+        textY += detailsFontSize * 0.35 + 0.6;
 
         if (session.teacher) {
           doc.text(session.teacher, textX, textY);
-          textY += detailsFontSize / 2 + 0.5;
+          textY += detailsFontSize * 0.35 + 0.6;
         }
 
         if (session.location) {
@@ -741,18 +756,47 @@ const App: React.FC = () => {
       if (virtualSessions.length > 0) {
         const sectionStartY = startY + headerHeight + totalGridHeight + 10;
         doc.setFont(style.font, "bold");
-        doc.setFontSize(11 * fontScale);
+        doc.setFontSize(11 * fontScale * exportScale);
         doc.setTextColor(style.textMain[0], style.textMain[1], style.textMain[2]);
         doc.text("Materias Virtuales / Asincrónicas", startX, sectionStartY);
 
-        let virtualY = sectionStartY + 6;
-        doc.setFont(style.font, "normal");
-        doc.setFontSize(9 * fontScale);
+        const virtualGap = 4;
+        const virtualCardWidth = (usableWidth - virtualGap * (virtualColumns - 1)) / virtualColumns;
+        const virtualCardTop = sectionStartY + 6;
+        const virtualTitleFontSize = 8.5 * fontScale * exportScale;
+        const virtualDetailFontSize = 6.8 * fontScale * exportScale;
 
-        virtualSessions.forEach((session) => {
-          if (virtualY > 200) return;
-          doc.text(`- ${session.subject} | Docente: ${session.teacher || "N/A"} | Modalidad: Virtual`, startX, virtualY);
-          virtualY += 5;
+        virtualSessions.forEach((session, index) => {
+          const column = index % virtualColumns;
+          const row = Math.floor(index / virtualColumns);
+          const cardX = startX + column * (virtualCardWidth + virtualGap);
+          const cardY = virtualCardTop + row * (virtualCardHeight + 4);
+          if (cardY + virtualCardHeight > pageHeight - 10) return;
+
+          const { r, g, b } = hexToRgb(session.color || "#a1f5b8");
+
+          doc.setFillColor(255, 255, 255);
+          doc.setDrawColor(r, g, b);
+          doc.setLineWidth(0.4);
+          doc.roundedRect(cardX, cardY, virtualCardWidth, virtualCardHeight, 2, 2, "FD");
+
+          doc.setFillColor(r, g, b);
+          doc.rect(cardX, cardY, 2, virtualCardHeight, "F");
+
+          doc.setTextColor(style.textMain[0], style.textMain[1], style.textMain[2]);
+          doc.setFont(style.font, "bold");
+          doc.setFontSize(virtualTitleFontSize);
+          const subjectLines = doc.splitTextToSize(session.subject, virtualCardWidth - 6);
+          doc.text(subjectLines, cardX + 3, cardY + 3.8);
+
+          let infoY = cardY + 3.8 + subjectLines.length * 3.2;
+          doc.setFont(style.font, "normal");
+          doc.setFontSize(virtualDetailFontSize);
+          doc.text(
+            `Docente: ${session.teacher || "N/A"} · Modalidad: ${session.location || "Virtual"}`,
+            cardX + 3,
+            infoY,
+          );
         });
       }
 
