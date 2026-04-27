@@ -13,17 +13,26 @@ interface CustomizerSidebarProps {
 
 // Paleta derivada de tokens Academic Curator + colores complementarios
 const COLORS = [
-  '#a1f5b8', // primary-fixed (verde menta)
-  '#004925', // primary (verde UTM)
-  '#fcb812', // secondary-container (dorado UTM)
-  '#86d89d', // primary-fixed-dim
-  '#ffdea7', // secondary-fixed
-  '#dee3e8', // tertiary-fixed
-  '#c1c7cc', // tertiary-fixed-dim
-  '#ffdad6', // error-container
-  '#006334', // primary-container
-  '#50565b', // tertiary-container
+  '#22C55E',
+  '#3B82F6',
+  '#F97316',
+  '#EF4444',
+  '#A855F7',
+  '#06B6D4',
+  '#EAB308',
 ];
+
+const DEFAULT_COLOR = COLORS[0];
+
+const getTextColor = (bg: string) => {
+  const cleaned = bg.replace('#', '').trim();
+  if (cleaned.length !== 6) return '#111111';
+  const r = parseInt(cleaned.substring(0, 2), 16);
+  const g = parseInt(cleaned.substring(2, 4), 16);
+  const b = parseInt(cleaned.substring(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.6 ? '#111111' : '#ffffff';
+};
 
 const THEMES: { id: ScheduleTheme; name: string; description: string; previewClass: string }[] = [
   {
@@ -66,7 +75,7 @@ const CustomizerSidebar: React.FC<CustomizerSidebarProps> = ({
 
   const getSubjectColor = (subject: string) => {
     const session = schedule.sessions.find((s) => s.subject === subject);
-    return session?.color || '#a1f5b8';
+    return session?.color || DEFAULT_COLOR;
   };
 
   return (
@@ -134,7 +143,7 @@ const CustomizerSidebar: React.FC<CustomizerSidebarProps> = ({
 
               {subjects.map((subject) => (
                 <div key={subject} className="bg-surface-container-low rounded-xl p-4 shadow-editorial">
-                  <h4 className="font-bold text-on-surface text-sm mb-3 line-clamp-1" title={subject}>
+                  <h4 className="font-bold text-on-surface text-sm mb-3 break-words whitespace-normal leading-tight" title={subject}>
                     {subject}
                   </h4>
                   <div className="flex flex-wrap gap-2">
@@ -186,7 +195,10 @@ const CustomizerSidebar: React.FC<CustomizerSidebarProps> = ({
                   {/* Mini preview */}
                   <div className={`h-10 w-full rounded-lg flex items-center justify-center ${theme.previewClass}`}>
                     <div className="text-[9px] opacity-70 font-bold px-2 py-0.5 rounded"
-                      style={theme.id === 'DEFAULT' ? { background: '#a1f5b8', color: '#00522a' } : {}}>
+                      style={theme.id === 'DEFAULT'
+                        ? { background: DEFAULT_COLOR, color: getTextColor(DEFAULT_COLOR) }
+                        : {}}
+                    >
                       10:00 — MATEMÁTICAS
                     </div>
                   </div>

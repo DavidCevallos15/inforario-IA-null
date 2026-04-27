@@ -10,11 +10,13 @@ export interface ClassSession {
   id: string;
   subject: string;
   subject_faculty?: string; // 👈 NUEVO: Facultad específica de la materia
-  day: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
-  startTime: string; // HH:mm format
-  endTime: string; // HH:mm format
+  day?: 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes';
+  startTime?: string; // HH:mm format
+  endTime?: string; // HH:mm format
   teacher: string;
   location: string;
+  floor?: string;
+  isVirtual?: boolean;
   // Se eliminó la propiedad 'type' ('Teoría' | 'Práctica' | 'Unknown')
   color?: string;
   conflict?: boolean;
@@ -50,6 +52,5 @@ export enum Feature {
   SYNC_CALENDAR = 'SYNC_CALENDAR',
 }
 
-export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
-
-export const DAYS: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+export type DayOfWeek = 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes';
+export const DAYS: DayOfWeek[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];

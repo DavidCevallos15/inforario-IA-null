@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { parseScheduleFile } from "./services/scheduleParser";
+import { parseScheduleFileWithEdge } from "./services/scheduleExtractorEdge";
 import {
   Schedule,
   AppView,
@@ -201,8 +202,23 @@ const App: React.FC = () => {
         const base64data = reader.result as string;
         const mimeType = file.type;
         try {
-          const { sessions, faculty, academic_period } =
-            await parseScheduleFile(base64data, mimeType);
+          let parsedResult;
+
+          if (mimeType === "application/pdf") {
+            try {
+              parsedResult = await parseScheduleFileWithEdge(base64data);
+            } catch (edgeError) {
+              console.warn(
+                "La extracción con Edge Function falló, usando parser local.",
+                edgeError,
+              );
+              parsedResult = await parseScheduleFile(base64data, mimeType);
+            }
+          } else {
+            parsedResult = await parseScheduleFile(base64data, mimeType);
+          }
+
+          const { sessions, faculty, academic_period } = parsedResult;
 
           let newSchedule: Schedule = {
             title: "Mi Horario Académico",
@@ -494,15 +510,22 @@ const App: React.FC = () => {
       const margin = 15;
       const usableWidth = 297 - margin * 2;
 
+      const regularSessions = currentSchedule.sessions.filter(
+        (s) => !s.isVirtual && s.day && s.startTime && s.endTime,
+      );
+      const virtualSessions = currentSchedule.sessions.filter(
+        (s) => s.isVirtual || !s.day || !s.startTime || !s.endTime,
+      );
+
       const timeColWidth = 20;
       const dayColWidth = (usableWidth - timeColWidth) / 5; // 5 Days
 
       let minHour = 7;
       let maxHour = 18;
-      if (currentSchedule.sessions.length > 0) {
+      if (regularSessions.length > 0) {
         let min = 24;
         let max = 0;
-        currentSchedule.sessions.forEach((s) => {
+        regularSessions.forEach((s) => {
           const startH = parseInt(s.startTime.split(":")[0]);
           const endH =
             parseInt(s.endTime.split(":")[0]) +
@@ -594,7 +617,8 @@ const App: React.FC = () => {
       );
 
       // --- 5. Draw Classes ---
-      currentSchedule.sessions.forEach((session) => {
+      regularSessions.forEach((session) => {
+        if (!session.day || !session.startTime || !session.endTime) return;
         const dayIndex = DAYS.indexOf(session.day);
         if (dayIndex === -1) return;
 
@@ -609,7 +633,7 @@ const App: React.FC = () => {
           startY + headerHeight + (startOffsetMins / 60) * hourHeight;
         const cellHeight = (durationMins / 60) * hourHeight;
 
-        let { r, g, b } = hexToRgb(session.color || "#a1f5b8");
+        let { r, g, b } = hexToRgb(session.color || "#22C55E");
         if (session.conflict) {
           r = 255;
           g = 0;
@@ -713,6 +737,24 @@ const App: React.FC = () => {
           doc.text(session.location, textX, textY);
         }
       });
+
+      if (virtualSessions.length > 0) {
+        const sectionStartY = startY + headerHeight + totalGridHeight + 10;
+        doc.setFont(style.font, "bold");
+        doc.setFontSize(11 * fontScale);
+        doc.setTextColor(style.textMain[0], style.textMain[1], style.textMain[2]);
+        doc.text("Materias Virtuales / Asincrónicas", startX, sectionStartY);
+
+        let virtualY = sectionStartY + 6;
+        doc.setFont(style.font, "normal");
+        doc.setFontSize(9 * fontScale);
+
+        virtualSessions.forEach((session) => {
+          if (virtualY > 200) return;
+          doc.text(`- ${session.subject} | Docente: ${session.teacher || "N/A"} | Modalidad: Virtual`, startX, virtualY);
+          virtualY += 5;
+        });
+      }
 
       doc.save("mi_horario_utm.pdf");
     } catch (err) {

@@ -4,8 +4,9 @@ import { UserProfile, Schedule } from '../types';
 
 // --- Client Initialization ---
 
-const activeUrl = DEFAULT_SUPABASE_URL;
-const activeKey = DEFAULT_SUPABASE_KEY;
+// Priorizar variables de entorno de Vite (.env.local) sobre las constantes hardcodeadas
+const activeUrl = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+const activeKey = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
 
 // Robust initialization: fallback to a dummy object if keys are missing to prevent white-screen crashes.
 const isConfigured = !!(activeUrl && activeKey && !activeUrl.includes("placeholder"));

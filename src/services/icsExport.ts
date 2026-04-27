@@ -55,7 +55,7 @@ export function generateICS(schedule: Schedule, semesterStart: Date, semesterEnd
 
   schedule.sessions.forEach(session => {
     // Skip virtual or unassigned classes with no real times
-    if (!session.startTime || !session.endTime || session.location === 'MATERIA VIRTUAL') {
+    if (!session.day || !session.startTime || !session.endTime || session.isVirtual) {
       return; 
     }
 

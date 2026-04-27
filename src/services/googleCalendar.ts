@@ -216,7 +216,7 @@ export const useGoogleCalendar = () => {
         let eventCount = 0;
 
         schedule.sessions.forEach((session) => {
-          if (session.conflict) return;
+          if (session.conflict || session.isVirtual || !session.day || !session.startTime || !session.endTime) return;
 
           const firstDate = getFirstDateOfDay(semesterStart, session.day);
           if (firstDate > semesterEnd) return;

@@ -20,13 +20,23 @@ interface TextItem {
 // ------------------------------------------------------------------
 // DAY DETECTION MAP (español → inglés)
 // ------------------------------------------------------------------
-const DAY_MAP: Record<string, 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday'> = {
-  'lunes': 'Monday',
-  'martes': 'Tuesday',
-  'miercoles': 'Wednesday',
-  'miércoles': 'Wednesday',
-  'jueves': 'Thursday',
-  'viernes': 'Friday',
+const DAY_MAP: Record<string, 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes'> = {
+  'lunes': 'Lunes',
+  'martes': 'Martes',
+  'miercoles': 'Miércoles',
+  'jueves': 'Jueves',
+  'viernes': 'Viernes',
+};
+
+const SUBJECT_COLORS = ['#22C55E', '#3B82F6', '#F97316', '#EF4444', '#A855F7', '#06B6D4', '#EAB308'];
+
+const getSubjectColor = (subject: string, subjectColors: Map<string, string>) => {
+  const key = subject.trim().toUpperCase();
+  const existing = subjectColors.get(key);
+  if (existing) return existing;
+  const color = SUBJECT_COLORS[subjectColors.size % SUBJECT_COLORS.length];
+  subjectColors.set(key, color);
+  return color;
 };
 
 // ------------------------------------------------------------------
@@ -279,6 +289,7 @@ function findValueAfterLabel(items: TextItem[], labelIdx: number): string | null
 // ------------------------------------------------------------------
 function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[] {
   const sessions: ClassSession[] = [];
+  const subjectColors = new Map<string, string>();
   
   // Column boundaries (based on UTM SGA PDF layout analysis)
   const COL = {
@@ -368,6 +379,7 @@ function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[
     // Build the subject name (join multi-line names, remove trailing "(A19)" etc.)
     let subjectName = subjectParts.join(' ')
       .replace(/\s*\([A-Z0-9]+\)\s*/g, '') // Remove malla code like (A19) or (ITINERARIO) completely. User requested clean name
+      .replace(/^(TECNOLOG[IÍ]AS DE LA\s*)+/i, '')
       .replace(/\s+/g, ' ')
       .trim();
     
@@ -378,6 +390,30 @@ function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[
     
     // Parse schedule entries from horario items
     const scheduleEntries = parseHorarioEntries(horarioItems);
+
+    const horarioText = horarioItems.map((i) => i.text).join(' ');
+    const isVirtualOnly = scheduleEntries.length === 0 && /MATERIA\s+VIRTUAL/i.test(horarioText);
+
+    const subjectKey = subjectName.toUpperCase();
+    const subjectColor = getSubjectColor(subjectKey, subjectColors);
+
+    if (isVirtualOnly) {
+      sessions.push({
+        id: crypto.randomUUID(),
+        subject: subjectKey,
+        subject_faculty: faculty,
+        day: undefined,
+        startTime: undefined,
+        endTime: undefined,
+        teacher: docenteName,
+        location: 'Virtual',
+        floor: 'N/A',
+        isVirtual: true,
+        conflict: false,
+        color: subjectColor,
+      });
+      continue;
+    }
     
     // Skip virtual-only subjects (no physical schedule)
     if (scheduleEntries.length === 0) continue;
@@ -386,15 +422,17 @@ function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[
     for (const entry of scheduleEntries) {
       sessions.push({
         id: crypto.randomUUID(),
-        subject: subjectName.toUpperCase(),
+        subject: subjectKey,
         subject_faculty: faculty,
         day: entry.day,
         startTime: entry.startTime,
         endTime: entry.endTime,
         teacher: docenteName,
         location: entry.location,
+        floor: entry.floor || 'N/A',
+        isVirtual: false,
         conflict: false,
-        color: '#3b82f6',
+        color: subjectColor,
       });
     }
   }
@@ -408,10 +446,11 @@ function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[
 // PARSE HORARIO ENTRIES
 // ------------------------------------------------------------------
 interface ScheduleEntry {
-  day: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
+  day: 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes';
   startTime: string;
   endTime: string;
   location: string;
+  floor?: string;
 }
 
 function parseHorarioEntries(items: TextItem[]): ScheduleEntry[] {
@@ -486,11 +525,13 @@ function parseHorarioEntries(items: TextItem[]): ScheduleEntry[] {
     const day = DAY_MAP[dayName] || DAY_MAP[entry.day.toLowerCase()];
     
     if (day) {
+      const floorMatch = location.match(/Piso\s*(\d+)/i);
       entries.push({
         day,
         startTime: entry.startTime,
         endTime: entry.endTime,
         location,
+        floor: floorMatch?.[1] || 'N/A',
       });
     }
   }
@@ -529,6 +570,7 @@ async function parseImage(base64Data: string, mimeType: string): Promise<ParseRe
 // ------------------------------------------------------------------
 function parseRawText(text: string): ParseResult {
   const sessions: ClassSession[] = [];
+  const subjectColors = new Map<string, string>();
   let faculty: string | undefined;
   let academicPeriod: string | undefined;
   
@@ -558,6 +600,7 @@ function parseRawText(text: string): ParseResult {
       const day = DAY_MAP[dayName];
       
       if (day && currentSubject) {
+        const subjectColor = getSubjectColor(currentSubject, subjectColors);
         // Look ahead for location
         let location = 'Sin asignar';
         for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
@@ -578,8 +621,10 @@ function parseRawText(text: string): ParseResult {
           teacher: currentDocente || 'Sin asignar',
           subject_faculty: faculty,
           location,
+          floor: (location.match(/Piso\s*(\d+)/i)?.[1]) || 'N/A',
+          isVirtual: /MATERIA\s+VIRTUAL/i.test(location),
           conflict: false,
-          color: '#3b82f6',
+          color: subjectColor,
         });
       }
     }
@@ -587,7 +632,10 @@ function parseRawText(text: string): ParseResult {
     // Detect subject/docente lines (heuristic: all caps, substantial text, not a schedule line)
     if (line.length > 10 && /^[A-ZÁÉÍÓÚÜÑ\s()]+$/.test(line) && !line.includes('LUGAR:') && !line.includes('COD.') && !line.includes('LEYENDA')) {
       if (!line.includes('LUNES') && !line.includes('MARTES') && !line.includes('JUEVES') && !line.includes('VIERNES')) {
-        currentSubject = line.replace(/\s*\([A-Z0-9]+\)\s*/g, '').trim();
+        currentSubject = line
+          .replace(/\s*\([A-Z0-9]+\)\s*/g, '')
+          .replace(/^(TECNOLOG[IÍ]AS DE LA\s*)+/i, '')
+          .trim();
       }
     }
   }
@@ -600,23 +648,26 @@ function parseRawText(text: string): ParseResult {
 // ------------------------------------------------------------------
 function resolveConflicts(sessions: ClassSession[]): ClassSession[] {
   if (sessions.length <= 1) return sessions;
+
+  const schedulable = sessions.filter((s) => s.day && s.startTime && s.endTime);
+  const unscheduled = sessions.filter((s) => !s.day || !s.startTime || !s.endTime);
   
   const toRemove = new Set<string>();
   
   // Sort by start time so we predictably evaluate conflicts
-  sessions.sort((a, b) => {
+  schedulable.sort((a, b) => {
     if (a.day !== b.day) return a.day.localeCompare(b.day);
     return a.startTime.localeCompare(b.startTime);
   });
   
-  for (let i = 0; i < sessions.length; i++) {
-    if (toRemove.has(sessions[i].id)) continue;
+  for (let i = 0; i < schedulable.length; i++) {
+    if (toRemove.has(schedulable[i].id)) continue;
     
-    for (let j = i + 1; j < sessions.length; j++) {
-      if (toRemove.has(sessions[j].id)) continue;
+    for (let j = i + 1; j < schedulable.length; j++) {
+      if (toRemove.has(schedulable[j].id)) continue;
       
-      const s1 = sessions[i];
-      const s2 = sessions[j];
+      const s1 = schedulable[i];
+      const s2 = schedulable[j];
       
       if (s1.day === s2.day) {
         const timeToMins = (time: string) => {
@@ -638,7 +689,7 @@ function resolveConflicts(sessions: ClassSession[]): ClassSession[] {
     }
   }
   
-  return sessions.filter(s => !toRemove.has(s.id));
+  return [...schedulable.filter(s => !toRemove.has(s.id)), ...unscheduled];
 }
 
 // ------------------------------------------------------------------
