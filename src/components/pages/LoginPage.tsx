@@ -20,6 +20,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Track which fields have errors
+  const [fieldErrors, setFieldErrors] = useState<{email?: boolean; password?: boolean}>({});
 
   // Password Validation State
   const [pwdValidations, setPwdValidations] = useState({
@@ -47,6 +50,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
     setError(null);
     setSuccessMsg(null);
     setLoading(false);
+    setFieldErrors({});
   };
 
   const resetFormFields = () => {
@@ -132,15 +136,18 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
       console.error(err);
       const msg = err?.message || "";
       if (msg.includes("User already registered")) {
-        setError("Este correo ya está registrado. Por favor, inicia sesión.");
+        setError("Este correo ya esta registrado. Por favor, inicia sesion.");
+        setFieldErrors({ email: true });
       } else if (msg.includes("Invalid login")) {
-        setError("Credenciales incorrectas.");
+        setError("Credenciales incorrectas. Verifica tu correo y contrasena.");
+        setFieldErrors({ email: true, password: true });
       } else if (msg.includes("Email address not authorized")) {
-        setError("Tu proyecto usa el SMTP por defecto de Supabase: solo envía a correos autorizados del equipo. Configura un SMTP propio para enviar a estudiantes.");
+        setError("Tu proyecto usa el SMTP por defecto de Supabase: solo envia a correos autorizados del equipo.");
+        setFieldErrors({ email: true });
       } else if (msg.toLowerCase().includes("rate limit") || msg.toLowerCase().includes("too many requests")) {
-        setError("Límite de envíos alcanzado temporalmente. Intenta más tarde o revisa los límites de Auth en Supabase.");
+        setError("Limite de envios alcanzado temporalmente. Intenta mas tarde.");
       } else {
-        setError(msg || "Ocurrió un error. Inténtalo de nuevo.");
+        setError(msg || "Ocurrio un error. Intentalo de nuevo.");
       }
     } finally {
       if (view !== 'REGISTER' && view !== 'FORGOT_PASSWORD') {
@@ -210,8 +217,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
 
           {/* Error / Success Messages */}
           {error && (
-            <div className="mb-4 p-3 bg-destructive/10 text-destructive text-xs rounded-lg flex items-start gap-2 border border-destructive/20">
-              <AlertCircle size={14} className="mt-0.5 shrink-0" />
+            <div className="mb-4 p-3 bg-red-50 border-2 border-red-300 text-red-700 text-sm rounded-xl flex items-start gap-2 font-medium">
+              <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-500" />
               <span>{error}</span>
             </div>
           )}
@@ -244,16 +251,23 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
 
             {/* Email */}
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-on-surface-variant">Correo electrónico</label>
+              <label className="text-xs font-semibold text-on-surface-variant">Correo electronico</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
+                <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 ${fieldErrors.email ? 'text-red-500' : 'text-on-surface-variant'}`} size={16} />
                 <input 
                   type="email" 
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: false }));
+                  }}
                   placeholder="estudiante@utm.edu.ec"
-                  className="w-full pl-9 pr-4 py-2.5 bg-surface-container-lowest border border-outline-variant/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-on-surface placeholder:text-on-surface-variant/60"
+                  className={`w-full pl-9 pr-4 py-2.5 bg-surface-container-lowest rounded-lg focus:outline-none focus:ring-2 transition-all text-sm text-on-surface placeholder:text-on-surface-variant/60 ${
+                    fieldErrors.email 
+                      ? 'border-2 border-red-400 focus:ring-red-200 focus:border-red-500' 
+                      : 'border border-outline-variant/40 focus:ring-primary/20 focus:border-primary'
+                  }`}
                 />
               </div>
             </div>
@@ -261,16 +275,23 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
             {/* Password */}
             {view !== 'FORGOT_PASSWORD' && (
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-on-surface-variant">Contraseña</label>
+                <label className="text-xs font-semibold text-on-surface-variant">Contrasena</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
+                  <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 ${fieldErrors.password ? 'text-red-500' : 'text-on-surface-variant'}`} size={16} />
                   <input 
                     type={showPassword ? "text" : "password"} 
                     required
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: false }));
+                    }}
                     placeholder="••••••••"
-                    className="w-full pl-9 pr-10 py-2.5 bg-surface-container-lowest border border-outline-variant/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-on-surface placeholder:text-on-surface-variant/60"
+                    className={`w-full pl-9 pr-10 py-2.5 bg-surface-container-lowest rounded-lg focus:outline-none focus:ring-2 transition-all text-sm text-on-surface placeholder:text-on-surface-variant/60 ${
+                      fieldErrors.password 
+                        ? 'border-2 border-red-400 focus:ring-red-200 focus:border-red-500' 
+                        : 'border border-outline-variant/40 focus:ring-primary/20 focus:border-primary'
+                    }`}
                   />
                   <button 
                     type="button"

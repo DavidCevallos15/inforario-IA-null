@@ -3,11 +3,11 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-"scripts": {
-  "dev": "vite",
-  "start:supa": "supabase start",
-  "dev:web": "concurrently --names \"FUNC,VITE\" -c \"bgMagenta,bgCyan\" \"supabase functions serve extract-schedule --env-file ./supabase/functions/extract-schedule/.env\" \"vite\""
-},
+  "scripts": {
+    "dev": "vite",
+    "start:supa": "supabase start",
+    "dev:web": "concurrently --names \"FUNC,VITE\" -c \"bgMagenta,bgCyan\" \"supabase functions serve extract-schedule --env-file ./supabase/functions/extract-schedule/.env\" \"vite\""
+  },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.2",
@@ -19,10 +19,12 @@
     "pdfjs-dist": "^4.10.38",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-router-dom": "^7.15.1",
     "simplex-noise": "^4.0.1",
     "tailwind-merge": "^2.3.0",
     "tesseract.js": "^5.1.1",
-    "three": "^0.181.2"
+    "three": "^0.181.2",
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@types/gapi": "^0.0.47",

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Palette, Layout, Check } from 'lucide-react';
+import { X, Palette, Layout, Check, RotateCcw } from 'lucide-react';
 import { Schedule, ScheduleTheme } from '../types';
 
 interface CustomizerSidebarProps {
@@ -9,6 +9,7 @@ interface CustomizerSidebarProps {
   onColorChange: (subject: string, color: string) => void;
   currentTheme: ScheduleTheme;
   onThemeChange: (theme: ScheduleTheme) => void;
+  onResetColors?: () => void;
 }
 
 // Paleta derivada de tokens Academic Curator + colores complementarios
@@ -68,8 +69,10 @@ const CustomizerSidebar: React.FC<CustomizerSidebarProps> = ({
   onColorChange,
   currentTheme,
   onThemeChange,
+  onResetColors,
 }) => {
   const [activeTab, setActiveTab] = useState<'colors' | 'design'>('colors');
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const subjects = Array.from(new Set(schedule.sessions.map((s) => s.subject))) as string[];
 
@@ -138,8 +141,46 @@ const CustomizerSidebar: React.FC<CustomizerSidebarProps> = ({
           {activeTab === 'colors' && (
             <div className="space-y-4">
               <div className="bg-primary-fixed/40 p-3 rounded-xl text-xs text-on-primary-fixed-variant mb-2 font-medium">
-                Personaliza el color de cada materia para identificarla rápidamente.
+                Personaliza el color de cada materia para identificarla rapidamente.
               </div>
+
+              {/* Reset Colors Button */}
+              {onResetColors && (
+                <div className="relative">
+                  {showResetConfirm ? (
+                    <div className="bg-error-container/30 border border-error/30 rounded-xl p-4 space-y-3">
+                      <p className="text-sm text-on-surface font-medium">
+                        ¿Restablecer todos los colores a los valores predeterminados?
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            onResetColors();
+                            setShowResetConfirm(false);
+                          }}
+                          className="flex-1 bg-error text-on-error py-2 rounded-lg text-sm font-semibold hover:bg-error/90 transition-colors"
+                        >
+                          Si, restablecer
+                        </button>
+                        <button
+                          onClick={() => setShowResetConfirm(false)}
+                          className="flex-1 bg-surface-container text-on-surface py-2 rounded-lg text-sm font-semibold hover:bg-surface-container-high transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowResetConfirm(true)}
+                      className="w-full flex items-center justify-center gap-2 bg-surface-container hover:bg-surface-container-high text-on-surface-variant py-2.5 rounded-xl text-sm font-semibold transition-colors border border-outline-variant/30"
+                    >
+                      <RotateCcw size={16} />
+                      Restablecer colores predeterminados
+                    </button>
+                  )}
+                </div>
+              )}
 
               {subjects.map((subject) => (
                 <div key={subject} className="bg-surface-container-low rounded-xl p-4 shadow-editorial">
