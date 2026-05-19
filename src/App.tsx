@@ -78,6 +78,25 @@ const cleanUserId = (id: string): string => {
 // (AnimatedHeroTitle eliminado — reemplazado por hero editorial estático)
 
 const App: React.FC = () => {
+  // Animation flag - only animate on first load per session
+  const [hasAnimated, setHasAnimated] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('inforario_has_animated') === 'true';
+    }
+    return false;
+  });
+
+  // Mark as animated after first render
+  useEffect(() => {
+    if (!hasAnimated) {
+      const timer = setTimeout(() => {
+        sessionStorage.setItem('inforario_has_animated', 'true');
+        setHasAnimated(true);
+      }, 2000); // After animations complete
+      return () => clearTimeout(timer);
+    }
+  }, [hasAnimated]);
+
   // State
   const [view, setView] = useState<AppView>(AppView.LANDING);
   const [currentSchedule, setCurrentSchedule] = useState<Schedule | null>(null);
@@ -668,7 +687,7 @@ const App: React.FC = () => {
           doc.setFillColor(r, g, b);
           doc.rect(cellX + 0.5, cellY + 0.5, 2, cellHeight - 1, "F");
           doc.setTextColor(0, 0, 0);
-        } else if (theme === "NEON" || theme === "DEFAULT") {
+        } else if (theme === "NEON") {
           doc.setFillColor(21, 27, 59);
           doc.setDrawColor(r, g, b);
           doc.setLineWidth(0.5);
@@ -693,8 +712,11 @@ const App: React.FC = () => {
             2,
             "F",
           );
-          doc.setTextColor(255, 255, 255);
+          // Calculate text color based on background luminance
+          const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+          doc.setTextColor(luminance > 0.5 ? 0 : 255, luminance > 0.5 ? 0 : 255, luminance > 0.5 ? 0 : 255);
         } else {
+          // DEFAULT theme - use user's custom color as background
           doc.setFillColor(r, g, b);
           doc.roundedRect(
             cellX + 0.5,
@@ -705,7 +727,9 @@ const App: React.FC = () => {
             1,
             "F",
           );
-          doc.setTextColor(255, 255, 255);
+          // Calculate text color based on background luminance
+          const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+          doc.setTextColor(luminance > 0.5 ? 0 : 255, luminance > 0.5 ? 0 : 255, luminance > 0.5 ? 0 : 255);
         }
 
         const titleFontSize = 10 * fontScale * exportScale;
@@ -809,18 +833,24 @@ const App: React.FC = () => {
     }
   };
 
-  const fadeUpVariants: Variants = {
-    hidden: { opacity: 0, y: 24 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.7,
-        delay: 0.3 + i * 0.15,
-        ease: [0.25, 0.4, 0.25, 1] as const,
-      },
-    }),
-  };
+  // Conditional animation variants - skip animations if already played this session
+  const fadeUpVariants: Variants = hasAnimated
+    ? {
+        hidden: { opacity: 1, y: 0 },
+        visible: { opacity: 1, y: 0 },
+      }
+    : {
+        hidden: { opacity: 0, y: 24 },
+        visible: (i: number) => ({
+          opacity: 1,
+          y: 0,
+          transition: {
+            duration: 0.7,
+            delay: 0.3 + i * 0.15,
+            ease: [0.25, 0.4, 0.25, 1] as const,
+          },
+        }),
+      };
 
   const displayName =
     userProfile?.full_name ||
@@ -1003,7 +1033,7 @@ const App: React.FC = () => {
                         Crea tu horario
                       </h3>
                       <p className="text-on-surface-variant mb-6">
-                        Aún no tienes horarios guardados. Sube tu PDF del SGA
+                        Aún no tienes horarios guardados. Sube tu PDF del Sistema de Gestión Académica
                         para generar tu primer horario.
                       </p>
                     </div>
@@ -1046,7 +1076,7 @@ const App: React.FC = () => {
                     animate="visible"
                     className="display-lg text-on-surface mb-4 max-w-3xl mx-auto"
                   >
-                    Transforma tu horario SGA en una{" "}
+                    Transforma tu horario académico en una{" "}
                     <span className="italic text-primary">
                       agenda digital impecable.
                     </span>

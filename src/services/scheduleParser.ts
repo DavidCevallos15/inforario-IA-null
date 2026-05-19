@@ -392,7 +392,7 @@ function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[
     const scheduleEntries = parseHorarioEntries(horarioItems);
 
     const horarioText = horarioItems.map((i) => i.text).join(' ');
-    const isVirtualOnly = scheduleEntries.length === 0 && /MATERIA\s+VIRTUAL/i.test(horarioText);
+    const isVirtualOnly = scheduleEntries.length === 0 && /(MATERIA|ASIGNATURA)\s+VIRTUAL/i.test(horarioText);
 
     const subjectKey = subjectName.toUpperCase();
     const subjectColor = getSubjectColor(subjectKey, subjectColors);
@@ -459,8 +459,8 @@ function parseHorarioEntries(items: TextItem[]): ScheduleEntry[] {
   // Join all horario text for processing
   const allText = items.map(i => i.text).join('\n');
   
-  // Check if it's a virtual subject
-  if (/MATERIA\s+VIRTUAL/i.test(allText)) {
+  // Check if it's a virtual subject (supports both "MATERIA VIRTUAL" and "ASIGNATURA VIRTUAL")
+  if (/(MATERIA|ASIGNATURA)\s+VIRTUAL/i.test(allText)) {
     // If ALL entries are virtual, skip entirely
     // But if some are virtual and some have schedule, only process the scheduled ones
     if (!/\b(LUNES|MARTES|MI[EÉ]RCOLES|JUEVES|VIERNES)\b/i.test(allText)) {
@@ -499,7 +499,7 @@ function parseHorarioEntries(items: TextItem[]): ScheduleEntry[] {
     
     let location = 'Sin asignar';
 
-    if (/MATERIA\s+VIRTUAL/i.test(block)) {
+    if (/(MATERIA|ASIGNATURA)\s+VIRTUAL/i.test(block)) {
       location = 'Materia Virtual';
     }
 

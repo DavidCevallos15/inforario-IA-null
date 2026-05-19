@@ -77,10 +77,31 @@ const getErrorMessage = (error: unknown): string => {
 };
 
 // Helper: Calculate the first occurrence date of a day of week on or after start date
+// Accepts Spanish day names (Lunes, Martes, etc.) or English day names
 const getFirstDateOfDay = (startDate: Date, dayName: string): Date => {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const targetIndex = days.indexOf(dayName);
-  if (targetIndex === -1) return startDate;
+  // Map Spanish day names to day indices (0 = Sunday, 1 = Monday, etc.)
+  const dayMapping: Record<string, number> = {
+    'Lunes': 1,
+    'Martes': 2,
+    'Miércoles': 3,
+    'Miercoles': 3,
+    'Jueves': 4,
+    'Viernes': 5,
+    'Sábado': 6,
+    'Sabado': 6,
+    'Domingo': 0,
+    // English fallbacks
+    'Monday': 1,
+    'Tuesday': 2,
+    'Wednesday': 3,
+    'Thursday': 4,
+    'Friday': 5,
+    'Saturday': 6,
+    'Sunday': 0,
+  };
+
+  const targetIndex = dayMapping[dayName];
+  if (targetIndex === undefined) return startDate;
 
   const resultDate = new Date(startDate);
   const currentDay = resultDate.getDay();

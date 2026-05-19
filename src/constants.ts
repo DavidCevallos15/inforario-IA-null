@@ -5,10 +5,14 @@ import { ChartBar, Calendar, Download, Save, Palette, Upload, LogIn } from "luci
 export const SUPABASE_URL = "https://jmybcsusmazaxforhsms.supabase.co";
 export const SUPABASE_KEY = "sb_publishable_Sb2jQcuTd4OLQhloeIZTww_k95fFjdw";
 // Google Calendar
-// En tu archivo constants.ts
-// Safe process.env access
+// Safe import.meta.env access for Vite projects
 const getEnvVar = (key: string) => {
   try {
+    // Vite uses import.meta.env
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      return (import.meta.env as Record<string, string>)[key];
+    }
+    // Fallback to process.env for Node.js environments
     if (typeof process !== 'undefined' && process.env) {
       return process.env[key];
     }
@@ -18,8 +22,11 @@ const getEnvVar = (key: string) => {
   return "";
 };
 
-// Try process.env first, then fallback to localStorage for browser-based configuration
-export const GOOGLE_CLIENT_ID = getEnvVar("GOOGLE_CLIENT_ID") || (typeof window !== 'undefined' ? localStorage.getItem('google_client_id') : "") || "303071798512-muiirok53evctbn1rdmtisl2f6rednbn.apps.googleusercontent.com";
+// Try Vite env first (VITE_ prefix), then fallback to localStorage for browser-based configuration
+export const GOOGLE_CLIENT_ID = 
+  getEnvVar("VITE_GOOGLE_CLIENT_ID") || 
+  (typeof window !== 'undefined' ? localStorage.getItem('google_client_id') : "") || 
+  "303071798512-muiirok53evctbn1rdmtisl2f6rednbn.apps.googleusercontent.com";
 
 export const FEATURES = {
   GUEST: ['UPLOAD', 'PROCESS', 'RESOLVE_CONFLICT'],

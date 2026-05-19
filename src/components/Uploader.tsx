@@ -89,7 +89,7 @@ const Uploader: React.FC<UploaderProps> = ({ onUpload, isProcessing }) => {
 
           <h3 className="text-xl font-bold text-on-surface mb-2">Cargar Horario Académico</h3>
           <p className="text-on-surface-variant mb-6 max-w-sm text-sm leading-relaxed">
-            Arrastra tu archivo PDF del SGA aquí o haz clic para seleccionarlo.<br />
+            Arrastra tu archivo PDF del Sistema de Gestión Académica aquí o haz clic para seleccionarlo.<br />
             Extraeremos tu horario automáticamente.
           </p>
 

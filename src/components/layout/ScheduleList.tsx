@@ -132,7 +132,7 @@ const ScheduleList: React.FC<ScheduleListProps> = ({
             </div>
             <h4 className="text-lg font-bold text-on-surface mb-2">Sin horarios guardados</h4>
             <p className="text-on-surface-variant mb-6 max-w-xs mx-auto text-sm">
-              Carga un PDF de tu horario del SGA para comenzar.
+              Carga un PDF de tu horario del Sistema de Gestión Académica para comenzar.
             </p>
             <button
               onClick={onCreateNew}

@@ -15,7 +15,7 @@ const Footer: React.FC = () => {
           </div>
           <p className="text-sm text-on-surface-variant leading-relaxed max-w-xs">
             Gestor Inteligente de Horarios UTM.<br />
-            Transforma el SGA en experiencias digitales impecables.
+            Transforma el Sistema de Gestión Académica en experiencias digitales impecables.
           </p>
         </div>
 

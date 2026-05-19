@@ -37,7 +37,7 @@ const AboutPage: React.FC = () => {
           className="display-lg text-on-surface max-w-3xl mb-6"
         >
           Transformamos el{' '}
-          <span className="italic text-primary">caos del SGA</span>{' '}
+          <span className="italic text-primary">caos del Sistema de Gestión Académica</span>{' '}
           en herramientas accionables.
         </motion.h1>
 
@@ -112,7 +112,7 @@ const AboutPage: React.FC = () => {
               <span className="w-1.5 h-1.5 bg-error rounded-full" />
               El Pasado
             </div>
-            <h3 className="text-2xl font-bold text-on-surface mb-4">SGA Tradicional</h3>
+            <h3 className="text-2xl font-bold text-on-surface mb-4">Sistema Tradicional</h3>
             <p className="text-on-surface-variant leading-relaxed mb-6">
               Tablas HTML sin estilo. PDFs que hay que imprimir. Sin colores, sin interactividad, 
               sin exportación. Acceder al horario significaba sufrir el portal universitario.
@@ -150,13 +150,13 @@ const AboutPage: React.FC = () => {
 
               <h3 className="text-2xl font-bold text-on-primary mb-4">Inforario v3.0</h3>
               <p className="text-on-primary-container leading-relaxed mb-6">
-                Carga tu PDF del SGA y en segundos tienes un horario digital interactivo, con colores, 
+                Carga tu PDF del Sistema de Gestión Académica y en segundos tienes un horario digital interactivo, con colores, 
                 exportación a .ics para Google Calendar, PDF de alta calidad y personalización completa.
               </p>
 
               <ul className="space-y-3 text-sm">
                 {[
-                  'Extracción automática desde PDF del SGA',
+                  'Extracción automática desde PDF del Sistema Académico',
                   'Exportación a Google Calendar (.ics)',
                   'Descarga PDF de alta calidad',
                   'Personalización de colores por materia',
@@ -200,7 +200,7 @@ const AboutPage: React.FC = () => {
             {
               icon: <Zap size={26} />,
               title: 'Precisión & Velocidad',
-              description: 'El parser procesa tu PDF del SGA en segundos con alta precisión. Tu tiempo vale, y lo respetamos.',
+              description: 'El parser procesa tu PDF del Sistema Académico en segundos con alta precisión. Tu tiempo vale, y lo respetamos.',
             },
             {
               icon: <Eye size={26} />,
@@ -247,7 +247,7 @@ const AboutPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 text-center">
             {[
               { value: '15k+', label: 'Horarios Generados', sub: 'desde el lanzamiento' },
-              { value: '98%', label: 'Precisión del Parser', sub: 'en PDFs del SGA UTM' },
+              { value: '98%', label: 'Precisión del Parser', sub: 'en PDFs del Sistema Académico UTM' },
               { value: '3', label: 'Facultades', sub: 'Universidad Técnica de Manabí' },
             ].map((stat, i) => (
               <motion.div
