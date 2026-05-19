@@ -158,27 +158,40 @@ const mapSessions = (payload: ExtractScheduleEdgeResponse): ClassSession[] => {
 };
 
 export const parseScheduleFileWithEdge = async (base64Data: string): Promise<ParseResult> => {
+  console.log('[v0] parseScheduleFileWithEdge: Starting...');
+  console.log('[v0] isSupabaseConfigured:', isSupabaseConfigured());
+  
   if (!isSupabaseConfigured()) {
     throw new Error('Supabase no está configurado para usar extracción por IA.');
   }
 
+  console.log('[v0] Extracting PDF text...');
   const pdfText = await extractPdfText(base64Data);
+  console.log('[v0] PDF text extracted, length:', pdfText.length);
+  console.log('[v0] First 500 chars:', pdfText.substring(0, 500));
 
+  console.log('[v0] Invoking edge function...');
   const { data, error } = await supabase.functions.invoke('extract-schedule', {
     body: { pdfText },
   });
 
+  console.log('[v0] Edge function response:', { data, error });
+
   if (error) {
+    console.error('[v0] Edge function error:', error);
     throw new Error(error.message || 'No se pudo invocar extract-schedule.');
   }
 
   const payload = (data || {}) as ExtractScheduleEdgeResponse;
+  console.log('[v0] Payload sessions count:', payload.sessions?.length);
 
   if (payload.error) {
+    console.error('[v0] Payload error:', payload.error);
     throw new Error(payload.error);
   }
 
   const sessions = mapSessions(payload);
+  console.log('[v0] Mapped sessions count:', sessions.length);
 
   if (!sessions.length) {
     throw new Error('La IA no devolvió sesiones válidas.');

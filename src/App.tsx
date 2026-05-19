@@ -193,6 +193,7 @@ const App: React.FC = () => {
   };
 
   const handleUpload = async (file: File) => {
+    console.log('[v0] handleUpload: Starting with file:', file.name, file.type);
     setIsProcessing(true);
     try {
       // Convert to Base64
@@ -201,24 +202,29 @@ const App: React.FC = () => {
       reader.onloadend = async () => {
         const base64data = reader.result as string;
         const mimeType = file.type;
+        console.log('[v0] File read, mimeType:', mimeType, 'base64 length:', base64data.length);
         try {
           let parsedResult;
 
           if (mimeType === "application/pdf") {
             try {
+              console.log('[v0] Attempting edge function extraction...');
               parsedResult = await parseScheduleFileWithEdge(base64data);
+              console.log('[v0] Edge function succeeded, sessions:', parsedResult.sessions.length);
             } catch (edgeError) {
               console.warn(
-                "La extracción con Edge Function falló, usando parser local.",
+                "[v0] La extracción con Edge Function falló, usando parser local.",
                 edgeError,
               );
               parsedResult = await parseScheduleFile(base64data, mimeType);
+              console.log('[v0] Local parser succeeded, sessions:', parsedResult.sessions.length);
             }
           } else {
             parsedResult = await parseScheduleFile(base64data, mimeType);
           }
 
           const { sessions, faculty, academic_period } = parsedResult;
+          console.log('[v0] Parsed result:', { sessionsCount: sessions.length, faculty, academic_period });
 
           let newSchedule: Schedule = {
             title: "Mi Horario Académico",
@@ -228,6 +234,7 @@ const App: React.FC = () => {
             faculty: faculty || "FACULTAD DE CIENCIAS INFORMÁTICAS",
           };
 
+          console.log('[v0] Setting schedule with sessions:', newSchedule.sessions.length);
           setCurrentSchedule(newSchedule);
           setView(AppView.DASHBOARD);
           setShowUploaderInDashboard(false);
