@@ -1,17 +1,89 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_URL as DEFAULT_SUPABASE_URL, SUPABASE_KEY as DEFAULT_SUPABASE_KEY } from '../constants';
-import { UserProfile, Schedule } from '../types';
+import type { UserProfile, Schedule, DatabaseSchedule, DatabaseProfile, ApiResponse } from '../types';
 
-// --- Client Initialization ---
+// ============================================
+// CONFIGURATION
+// ============================================
 
-// Priorizar variables de entorno de Vite (.env.local) sobre las constantes hardcodeadas
 const activeUrl = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
 const activeKey = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
 
-// Robust initialization: fallback to a dummy object if keys are missing to prevent white-screen crashes.
 const isConfigured = !!(activeUrl && activeKey && !activeUrl.includes("placeholder"));
 
-// Dummy builder that allows chaining for any operation without crashing
+// ============================================
+// ERROR TYPES
+// ============================================
+
+export class SupabaseError extends Error {
+  constructor(
+    message: string,
+    public readonly code?: string,
+    public readonly originalError?: unknown
+  ) {
+    super(message);
+    this.name = 'SupabaseError';
+  }
+}
+
+export class AuthenticationError extends SupabaseError {
+  constructor(message: string, originalError?: unknown) {
+    super(message, 'AUTH_ERROR', originalError);
+    this.name = 'AuthenticationError';
+  }
+}
+
+export class NetworkError extends SupabaseError {
+  constructor(message: string, originalError?: unknown) {
+    super(message, 'NETWORK_ERROR', originalError);
+    this.name = 'NetworkError';
+  }
+}
+
+// ============================================
+// RETRY LOGIC
+// ============================================
+
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1000;
+
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  retries = MAX_RETRIES
+): Promise<T> {
+  let lastError: unknown;
+  
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      lastError = error;
+      
+      // Don't retry auth errors or validation errors
+      if (
+        error?.message?.includes('Invalid login') ||
+        error?.message?.includes('JWT') ||
+        error?.code === '400'
+      ) {
+        throw error;
+      }
+      
+      // Wait before retrying (exponential backoff)
+      if (attempt < retries - 1) {
+        await new Promise(resolve => 
+          setTimeout(resolve, RETRY_DELAY_MS * Math.pow(2, attempt))
+        );
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
+// ============================================
+// DUMMY CLIENT FOR UNCONFIGURED STATE
+// ============================================
+
 const createDummyBuilder = () => {
   const errorResult = { data: null, error: { message: "Database not configured" } };
   const promise = Promise.resolve(errorResult);
@@ -37,7 +109,6 @@ const createDummyBuilder = () => {
     limit: () => builder,
     single: () => promise,
     maybeSingle: () => promise,
-    // Complete Promise Interface to ensure await works correctly
     then: (onfulfilled?: (value: any) => any, onrejected?: (reason: any) => any) => promise.then(onfulfilled, onrejected),
     catch: (onrejected?: (reason: any) => any) => promise.catch(onrejected),
     finally: (onfinally?: (() => void) | null) => promise.finally(onfinally)
@@ -45,7 +116,12 @@ const createDummyBuilder = () => {
   return builder;
 };
 
-let client: any = null;
+// ============================================
+// CLIENT INITIALIZATION
+// ============================================
+
+let client: SupabaseClient | null = null;
+
 try {
   if (isConfigured) {
     client = createClient(activeUrl, activeKey);
@@ -55,7 +131,6 @@ try {
   client = null;
 }
 
-// Ensure the exported supabase object has the expected structure even if client fails
 export const supabase = client || {
   from: () => createDummyBuilder(),
   functions: {
@@ -73,18 +148,53 @@ export const supabase = client || {
   }
 } as any;
 
-export const isSupabaseConfigured = () => {
+export const isSupabaseConfigured = (): boolean => {
   return isConfigured && !!client;
 };
 
-// --- Database Operations ---
+// ============================================
+// VALIDATION HELPERS
+// ============================================
 
-export const saveScheduleToDB = async (userId: string, schedule: Schedule) => {
-  if (!isSupabaseConfigured() || !isUUID(userId)) return null;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-  try {
+const isUUID = (id: string): boolean => UUID_REGEX.test(id);
+
+const validateScheduleData = (schedule: Schedule): boolean => {
+  if (!schedule.title || typeof schedule.title !== 'string') {
+    return false;
+  }
+  if (!Array.isArray(schedule.sessions)) {
+    return false;
+  }
+  return true;
+};
+
+// ============================================
+// DATABASE OPERATIONS
+// ============================================
+
+export const saveScheduleToDB = async (
+  userId: string, 
+  schedule: Schedule
+): Promise<DatabaseSchedule[] | null> => {
+  if (!isSupabaseConfigured()) {
+    console.warn('Supabase not configured, skipping save');
+    return null;
+  }
+  
+  if (!isUUID(userId)) {
+    console.warn('Invalid user ID format, skipping save');
+    return null;
+  }
+
+  if (!validateScheduleData(schedule)) {
+    throw new SupabaseError('Invalid schedule data');
+  }
+
+  return withRetry(async () => {
     if (schedule.id) {
-      // Update
+      // Update existing schedule
       const { data, error } = await supabase
         .from('schedules')
         .update({
@@ -97,10 +207,12 @@ export const saveScheduleToDB = async (userId: string, schedule: Schedule) => {
         .eq('id', schedule.id)
         .select();
 
-      if (error) throw error;
+      if (error) {
+        throw new SupabaseError(error.message, error.code);
+      }
       return data;
     } else {
-      // Insert
+      // Insert new schedule
       const { data, error } = await supabase
         .from('schedules')
         .insert({
@@ -113,121 +225,166 @@ export const saveScheduleToDB = async (userId: string, schedule: Schedule) => {
         })
         .select();
 
-      if (error) throw error;
+      if (error) {
+        throw new SupabaseError(error.message, error.code);
+      }
       return data;
     }
-  } catch (err: any) {
-    console.error("Save schedule error:", err);
-    return null;
+  });
+};
+
+export const getUserSchedules = async (
+  userId: string
+): Promise<Partial<DatabaseSchedule>[]> => {
+  if (!isSupabaseConfigured() || !userId) {
+    return [];
   }
-};
-
-// Helper para validar si un string es un UUID válido
-const isUUID = (id: string) => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(id);
-};
-
-export const getUserSchedules = async (userId: string) => {
-  if (!isSupabaseConfigured() || !userId) return [];
   
-  // Si el ID es de desarrollo/invitado (no UUID), no consultamos la DB para evitar error 400
   if (!isUUID(userId)) {
-    console.log("ℹ️ Usuario invitado: omitiendo consulta a base de datos remota.");
+    console.log("Guest user: skipping remote database query");
     return [];
   }
 
-  try {
+  return withRetry(async () => {
     const { data, error } = await supabase
       .from('schedules')
       .select('id, title, academic_period, last_updated')
       .eq('user_id', userId)
       .order('last_updated', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      throw new SupabaseError(error.message, error.code);
+    }
     return data || [];
-  } catch (err: any) {
-    console.error("Get schedules error:", err);
-    return [];
-  }
+  });
 };
 
-export const getScheduleById = async (scheduleId: string) => {
-  if (!isSupabaseConfigured()) return null;
+export const getScheduleById = async (
+  scheduleId: string
+): Promise<DatabaseSchedule | null> => {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
 
-  try {
+  if (!isUUID(scheduleId)) {
+    throw new SupabaseError('Invalid schedule ID format');
+  }
+
+  return withRetry(async () => {
     const { data, error } = await supabase
       .from('schedules')
       .select('*')
       .eq('id', scheduleId)
       .single();
 
-    if (error) throw error;
+    if (error) {
+      throw new SupabaseError(error.message, error.code);
+    }
     return data;
-  } catch (err: any) {
-    console.error("Get schedule by ID error:", err);
-    return null;
-  }
+  });
 };
 
-export const deleteSchedule = async (scheduleId: string) => {
-  if (!isSupabaseConfigured()) return;
+export const deleteSchedule = async (scheduleId: string): Promise<void> => {
+  if (!isSupabaseConfigured()) {
+    return;
+  }
 
-  try {
+  if (!isUUID(scheduleId)) {
+    throw new SupabaseError('Invalid schedule ID format');
+  }
+
+  return withRetry(async () => {
     const { error } = await supabase
       .from('schedules')
       .delete()
       .eq('id', scheduleId);
 
-    if (error) throw error;
-  } catch (err: any) {
-    console.error("Delete error:", err);
-    if (err.message && (err.message.includes("Invalid login credentials") || err.message.includes("JWT"))) {
-      throw new Error("Credenciales inválidas o sesión expirada. Por favor cierra sesión y vuelve a ingresar.");
+    if (error) {
+      // Handle specific error types
+      if (error.message?.includes('Invalid login credentials') || error.message?.includes('JWT')) {
+        throw new AuthenticationError(
+          'Credenciales invalidas o sesion expirada. Por favor cierra sesion y vuelve a ingresar.'
+        );
+      }
+      if (error.message === 'Script error.') {
+        throw new NetworkError(
+          'Error de conexion. Por favor verifica tu internet o intenta mas tarde.'
+        );
+      }
+      throw new SupabaseError(error.message, error.code);
     }
-    if (err.message === "Script error.") {
-      throw new Error("Error de conexión. Por favor verifica tu internet o intenta más tarde.");
-    }
-    throw err;
-  }
+  });
 };
 
-export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
-  if (!isSupabaseConfigured() || !isUUID(userId)) return null;
+export const getUserProfile = async (
+  userId: string
+): Promise<UserProfile | null> => {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+  
+  if (!isUUID(userId)) {
+    return null;
+  }
 
-  try {
+  return withRetry(async () => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single();
 
-    if (error) return null;
+    if (error) {
+      // Profile might not exist yet, don't throw
+      return null;
+    }
     return data;
-  } catch (err: any) {
-    console.error("Get profile error:", err);
-    return null;
-  }
+  });
 };
 
-// --- Authentication Helpers ---
+// ============================================
+// AUTHENTICATION HELPERS
+// ============================================
 
 export const signInWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: window.location.origin }
   });
-  if (error) throw error;
+  
+  if (error) {
+    throw new AuthenticationError(error.message, error);
+  }
   return data;
 };
 
 export const signInWithEmail = async (email: string, password: string) => {
+  // Validate input
+  if (!email || !password) {
+    throw new AuthenticationError('Email y contrasena son requeridos');
+  }
+
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
+  
+  if (error) {
+    throw new AuthenticationError(error.message, error);
+  }
   return data;
 };
 
-export const signUpWithEmail = async (email: string, password: string, fullName: string) => {
+export const signUpWithEmail = async (
+  email: string, 
+  password: string, 
+  fullName: string
+) => {
+  // Validate input
+  if (!email || !password) {
+    throw new AuthenticationError('Email y contrasena son requeridos');
+  }
+  if (password.length < 6) {
+    throw new AuthenticationError('La contrasena debe tener al menos 6 caracteres');
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -236,14 +393,24 @@ export const signUpWithEmail = async (email: string, password: string, fullName:
       data: { full_name: fullName }
     }
   });
-  if (error) throw error;
+  
+  if (error) {
+    throw new AuthenticationError(error.message, error);
+  }
   return data;
 };
 
 export const resetPasswordForEmail = async (email: string) => {
+  if (!email) {
+    throw new AuthenticationError('Email es requerido');
+  }
+
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin,
   });
-  if (error) throw error;
+  
+  if (error) {
+    throw new AuthenticationError(error.message, error);
+  }
   return data;
-}
+};

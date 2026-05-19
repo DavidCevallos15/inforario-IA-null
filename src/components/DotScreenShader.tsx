@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useEffect } from 'react' // FIX: Imported React
+import React, { useMemo, useEffect, useRef } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
 import { shaderMaterial, useTrailTexture } from '@react-three/drei'
 import * as THREE from 'three'
@@ -74,30 +74,23 @@ interface SceneProps {
   appTheme: ScheduleTheme;
 }
 
+// Theme color configurations
+const THEME_COLORS: Record<ScheduleTheme, { dotColor: string; bgColor: string; dotOpacity: number }> = {
+  DEFAULT: { dotColor: '#00F0FF', bgColor: '#0A0E27', dotOpacity: 0.15 },
+  MINIMALIST: { dotColor: '#000000', bgColor: '#FFFFFF', dotOpacity: 0.15 },
+  SCHOOL: { dotColor: '#EA580C', bgColor: '#FFFDF0', dotOpacity: 0.15 },
+  NEON: { dotColor: '#22D3EE', bgColor: '#0F172A', dotOpacity: 0.15 },
+};
+
 export function Scene({ appTheme }: SceneProps) {
   const size = useThree((s) => s.size)
   const viewport = useThree((s) => s.viewport)
+  const materialRef = useRef<THREE.ShaderMaterial | null>(null);
   
-  // Use a fixed rotation or animate it if desired
   const rotation = 0
   const gridSize = 100
 
-  // Map application themes to shader colors
-  const getThemeColors = () => {
-    switch (appTheme) {
-      case 'MINIMALIST':
-        return { dotColor: '#000000', bgColor: '#FFFFFF', dotOpacity: 0.15 }
-      case 'SCHOOL':
-        return { dotColor: '#EA580C', bgColor: '#FFFDF0', dotOpacity: 0.15 }
-      case 'NEON':
-        return { dotColor: '#22D3EE', bgColor: '#0F172A', dotOpacity: 0.15 }
-      case 'DEFAULT':
-      default:
-        return { dotColor: '#00F0FF', bgColor: '#0A0E27', dotOpacity: 0.15 }
-    }
-  }
-
-  const themeColors = getThemeColors()
+  const themeColors = THEME_COLORS[appTheme] || THEME_COLORS.DEFAULT;
 
   const [trail, onMove] = useTrailTexture({
     size: 512,
@@ -110,25 +103,46 @@ export function Scene({ appTheme }: SceneProps) {
     }
   })
 
-  // @ts-ignore - shaderMaterial creates a class but TS might not infer it correctly without extending
+  // @ts-ignore - shaderMaterial creates a class but TS might not infer it correctly
   const dotMaterial = useMemo(() => new DotMaterial(), [])
 
+  // Store reference for cleanup
+  useEffect(() => {
+    materialRef.current = dotMaterial;
+  }, [dotMaterial]);
+
+  // Update theme colors
   useEffect(() => {
     dotMaterial.uniforms.dotColor.value.setHex(parseInt(themeColors.dotColor.replace('#', '0x'), 16))
     dotMaterial.uniforms.bgColor.value.setHex(parseInt(themeColors.bgColor.replace('#', '0x'), 16))
     dotMaterial.uniforms.dotOpacity.value = themeColors.dotOpacity
   }, [appTheme, dotMaterial, themeColors])
 
-  useFrame((state) => {
-    dotMaterial.uniforms.time.value = state.clock.elapsedTime
+  // Cleanup resources on unmount
+  useEffect(() => {
+    return () => {
+      if (materialRef.current) {
+        materialRef.current.dispose();
+      }
+      // Dispose trail texture if it has dispose method
+      if (trail && 'dispose' in trail && typeof trail.dispose === 'function') {
+        trail.dispose();
+      }
+    };
+  }, [trail]);
+
+  // Throttled animation update for performance
+  useFrame((state, delta) => {
+    // Cap delta to prevent large jumps when tab regains focus
+    const cappedDelta = Math.min(delta, 0.1);
+    dotMaterial.uniforms.time.value += cappedDelta;
   })
 
   const handlePointerMove = (e: any) => onMove(e)
   
-  // Calculate scale to ensure full screen coverage based on viewport
   const scale = Math.max(viewport.width, viewport.height) / 2
 
-  // FIX: Aliasing to bypass JSX.IntrinsicElements type check failure for R3F elements
+  // Aliasing for JSX type compatibility
   const Mesh = 'mesh' as any;
   const PlaneGeometry = 'planeGeometry' as any;
   const Primitive = 'primitive' as any;
