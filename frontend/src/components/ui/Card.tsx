@@ -13,9 +13,9 @@ export const Card: React.FC<CardProps> = ({
   const baseStyle = "rounded-[1.5rem] transition-all duration-300";
   
   const shadowVariants = {
-    flat: "bg-surface-container border border-outline-variant/20",
-    editorial: "bg-surface-container-low hover:bg-surface-container hover:shadow-editorial border border-outline-variant/10",
-    low: "bg-surface-container-lowest border border-outline-variant/15 editorial-shadow",
+    flat: "bg-surface-container border border-outline/40",
+    editorial: "bg-surface-container-low border border-outline/40 hover:border-outline hover:shadow-editorial",
+    low: "bg-surface-container-lowest border border-outline/30 editorial-shadow",
   };
 
   return (

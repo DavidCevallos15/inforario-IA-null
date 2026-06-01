@@ -34,7 +34,7 @@ export const Modal: React.FC<ModalProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-on-surface/40 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
           />
 
           {/* Modal content */}
@@ -43,7 +43,7 @@ export const Modal: React.FC<ModalProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ type: 'spring', duration: 0.5 }}
-            className={`relative w-full ${sizes[size]} bg-surface-container-lowest border border-outline-variant/20 rounded-[2rem] p-6 md:p-8 editorial-shadow z-10 overflow-hidden max-h-[90vh] flex flex-col`}
+            className={`relative w-full ${sizes[size]} bg-surface-container border border-outline/50 rounded-[2rem] p-6 md:p-8 editorial-shadow-lg z-10 overflow-hidden max-h-[90vh] flex flex-col`}
           >
             {/* Header */}
             <div className="flex items-center justify-between mb-6">

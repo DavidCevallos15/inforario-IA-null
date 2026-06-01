@@ -12,12 +12,12 @@ interface FeatureCardProps {
 }
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) => (
-  <div className="group bg-surface-container-low hover:bg-surface-container rounded-[1.5rem] p-8 transition-all duration-300 editorial-shadow hover:shadow-[0_24px_48px_rgba(0,73,37,0.12)]">
-    <div className="w-14 h-14 rounded-2xl bg-primary-fixed flex items-center justify-center text-on-primary-fixed-variant mb-6 group-hover:scale-110 transition-transform duration-300">
+  <div className="group rounded-[1.5rem] border border-outline/40 bg-surface-container-low p-8 transition-all duration-300 hover:border-primary/40 hover:shadow-editorial">
+    <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/30 bg-success-container text-primary-fixed transition-transform duration-300 group-hover:scale-110">
       {icon}
     </div>
-    <h4 className="text-xl font-bold text-on-surface mb-3">{title}</h4>
-    <p className="text-on-surface-variant leading-relaxed text-sm">{description}</p>
+    <h4 className="mb-3 text-xl font-bold text-on-surface">{title}</h4>
+    <p className="text-sm leading-relaxed text-on-surface-variant">{description}</p>
   </div>
 );
 
@@ -89,12 +89,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             animate="visible"
             className="w-full max-w-5xl mx-auto pt-10 px-4"
           >
-            <div className="bg-surface-container-lowest rounded-[1.8rem] p-6 md:p-8 editorial-shadow border border-outline-variant/20">
-              <span className="label-md text-secondary block mb-3 font-semibold uppercase tracking-wider text-xs">
+            <div className="rounded-[1.8rem] border border-outline/40 bg-surface-container-low p-6 editorial-shadow md:p-8">
+              <span className="label-md mb-3 block text-xs font-semibold uppercase tracking-wider text-secondary">
                 GESTOR DE HORARIOS
               </span>
-              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-on-surface mb-2">
-                Bienvenido, <span className="text-primary">{displayName}</span>
+              <h1 className="mb-2 text-3xl font-extrabold tracking-tight text-on-surface md:text-4xl">
+                Bienvenido, <span className="text-primary-fixed">{displayName}</span>
               </h1>
               <p className="text-on-surface-variant mb-6 text-sm md:text-base leading-relaxed">
                 Aquí puedes ver tus horarios guardados, crear uno nuevo y exportarlos cuando lo necesites.
@@ -145,8 +145,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 onCreateNew={() => setShowUploaderInDashboard(true)}
               />
             ) : (
-              <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-8 text-center editorial-shadow">
-                <h3 className="text-2xl font-bold text-on-surface mb-2">
+              <div className="rounded-2xl border border-outline/40 bg-surface-container-low p-8 text-center editorial-shadow">
+                <h3 className="mb-2 text-2xl font-bold text-on-surface">
                   Crea tu horario
                 </h3>
                 <p className="text-on-surface-variant mb-6 text-sm">
@@ -195,7 +195,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               className="text-4xl md:text-6xl font-extrabold tracking-tight text-on-surface mb-4 max-w-3xl mx-auto"
             >
               Transforma tu horario SGU en una{" "}
-              <span className="italic text-primary">
+              <span className="text-primary-fixed">
                 agenda digital impecable.
               </span>
             </motion.h1>
@@ -228,7 +228,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </button>
               <button
                 onClick={() => onNavigate(AppView.ABOUT)}
-                className="text-on-surface-variant font-semibold hover:text-primary transition-colors duration-200 flex items-center gap-2 text-base"
+                className="flex items-center gap-2 text-base font-semibold text-on-surface-variant transition-colors duration-200 hover:text-primary-fixed"
               >
                 Ver cómo funciona →
               </button>

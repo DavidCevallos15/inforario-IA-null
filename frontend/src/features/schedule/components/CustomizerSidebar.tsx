@@ -83,21 +83,21 @@ export const CustomizerSidebar: React.FC<CustomizerSidebarProps> = ({
       {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-on-surface/20 backdrop-blur-sm z-50 transition-opacity"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 transition-opacity"
           onClick={onClose}
         />
       )}
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full w-80 bg-surface-container-lowest shadow-editorial-lg z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
+        className={`fixed top-0 left-0 h-full w-80 bg-surface-container-lowest border-r border-outline/40 shadow-editorial-lg z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Header */}
-        <div className="p-5 flex justify-between items-center bg-surface-container-high">
+        <div className="p-5 flex justify-between items-center bg-surface-container-high border-b border-outline/40">
           <div className="flex items-center gap-2 text-on-surface">
-            <Palette size={20} className="text-primary" />
+            <Palette size={20} className="text-primary-fixed" />
             <h3 className="font-bold text-lg">Personalizar</h3>
           </div>
           <button
@@ -109,12 +109,12 @@ export const CustomizerSidebar: React.FC<CustomizerSidebarProps> = ({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-outline-variant/15 bg-surface-container-low">
+        <div className="flex border-b border-outline/40 bg-surface-container-low">
           <button
             onClick={() => setActiveTab('colors')}
             className={`flex-1 py-3 text-sm font-bold border-b-2 transition-all ${
               activeTab === 'colors'
-                ? 'border-primary text-primary bg-surface-container-lowest'
+                ? 'border-primary-fixed text-primary-fixed bg-surface-container-lowest'
                 : 'border-transparent text-on-surface-variant hover:text-on-surface'
             }`}
           >
@@ -124,7 +124,7 @@ export const CustomizerSidebar: React.FC<CustomizerSidebarProps> = ({
             onClick={() => setActiveTab('design')}
             className={`flex-1 py-3 text-sm font-bold border-b-2 transition-all ${
               activeTab === 'design'
-                ? 'border-primary text-primary bg-surface-container-lowest'
+                ? 'border-primary-fixed text-primary-fixed bg-surface-container-lowest'
                 : 'border-transparent text-on-surface-variant hover:text-on-surface'
             }`}
           >

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { AppView, Schedule } from './types';
-import { Navbar } from './components/layout/Navbar';
+import { Sidebar } from './components/layout/Sidebar';
 import Footer from './components/layout/Footer';
 import LandingPage from './features/landing/LandingPage';
 import { ScheduleDashboard } from './features/schedule/components/ScheduleDashboard';
@@ -139,13 +139,21 @@ const App: React.FC = () => {
     }
   };
 
+  // Login is a full-screen, sidebar-less experience.
+  if (view === AppView.LOGIN) {
+    return (
+      <>
+        <LoginPage onLogin={() => setView(AppView.LANDING)} onBack={() => setView(AppView.LANDING)} />
+        <AnimatePresence>{isProcessing && <ProcessingView />}</AnimatePresence>
+      </>
+    );
+  }
+
   return (
-    <>
-      <div className="fixed top-0 right-0 w-[600px] h-[600px] -z-10 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(0,73,37,0.04) 0%, transparent 70%)' }} />
-      <div className="relative min-h-screen w-full overflow-hidden flex flex-col pt-20">
-        <Navbar currentView={view} onNavigate={setView} currentSchedule={currentSchedule} sessionUser={sessionUser} userProfile={userProfile} />
-        <main className="flex-grow max-w-7xl mx-auto px-4 py-2 md:py-4 w-full">
-          {view === AppView.LOGIN && <LoginPage onLogin={() => setView(AppView.LANDING)} onBack={() => setView(AppView.LANDING)} />}
+    <div className="cyber-bg relative min-h-screen w-full">
+      <Sidebar currentView={view} onNavigate={setView} currentSchedule={currentSchedule} sessionUser={sessionUser} userProfile={userProfile} />
+      <div className="flex min-h-screen flex-col pt-16 lg:pt-0 lg:pl-72">
+        <main className="mx-auto w-full max-w-7xl flex-grow px-4 py-6 md:px-8 md:py-8">
           {view === AppView.PROFILE && <ProfilePage onBack={() => setView(AppView.LANDING)} onLogout={() => setView(AppView.LANDING)} />}
           {view === AppView.ABOUT && <AboutPage />}
           {view === AppView.LANDING && (
@@ -181,9 +189,9 @@ const App: React.FC = () => {
           )}
         </main>
         <Footer />
-        <AnimatePresence>{isProcessing && <ProcessingView />}</AnimatePresence>
       </div>
-    </>
+      <AnimatePresence>{isProcessing && <ProcessingView />}</AnimatePresence>
+    </div>
   );
 };
 

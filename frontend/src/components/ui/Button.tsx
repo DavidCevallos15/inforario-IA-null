@@ -20,11 +20,11 @@ export const Button: React.FC<ButtonProps> = ({
   const baseStyle = "inline-flex items-center justify-center font-semibold rounded-xl transition-colors duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed";
   
   const variants = {
-    primary: "bg-primary text-on-primary hover:bg-primary-container hover:text-on-primary-container",
-    secondary: "bg-secondary text-on-secondary hover:bg-secondary-container",
-    'secondary-container': "bg-secondary-container text-on-secondary-container shadow-editorial hover:scale-[1.02]",
-    outline: "border border-primary text-primary hover:bg-primary/5",
-    ghost: "text-on-surface-variant hover:text-primary hover:bg-surface-container/50",
+    primary: "bg-primary text-on-primary hover:bg-primary-container hover:shadow-glow-primary",
+    secondary: "bg-secondary text-on-secondary hover:bg-secondary-container hover:shadow-glow-gold",
+    'secondary-container': "bg-secondary text-on-secondary hover:bg-secondary-container hover:shadow-glow-gold",
+    outline: "border border-outline text-on-surface bg-surface-container-high/40 hover:border-primary-fixed hover:text-primary-fixed",
+    ghost: "text-on-surface-variant hover:text-primary-fixed hover:bg-surface-container-high/50",
   };
 
   const sizes = {

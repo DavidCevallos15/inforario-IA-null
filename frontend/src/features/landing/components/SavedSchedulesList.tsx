@@ -78,7 +78,7 @@ export const SavedSchedulesList: React.FC<SavedSchedulesListProps> = ({
           <div>
             <h2 className="headline-md text-on-surface text-left">Mis Horarios</h2>
             <p className="text-sm text-on-surface-variant mt-0.5 text-left">
-              <span className="inline-flex items-center gap-1.5 bg-primary-fixed text-on-primary-fixed-variant px-2.5 py-0.5 rounded-full text-xs font-semibold">
+              <span className="inline-flex items-center gap-1.5 bg-success-container text-primary-fixed border border-primary/30 px-2.5 py-0.5 rounded-full text-xs font-semibold">
                 {schedules.length} guardados
               </span>
             </p>
@@ -102,7 +102,7 @@ export const SavedSchedulesList: React.FC<SavedSchedulesListProps> = ({
               onClick={toggleSelectAll}
               className={`flex items-center gap-2 px-3 py-2 rounded-full transition-colors text-sm font-medium
                 ${selectedIds.length === schedules.length
-                  ? 'text-on-primary-fixed-variant bg-primary-fixed'
+                  ? 'text-primary-fixed bg-success-container border border-primary/30'
                   : 'text-on-surface-variant bg-surface-container hover:bg-surface-container-high'}`}
               title="Seleccionar todos"
               id="schedule-list-select-all-btn"
@@ -126,8 +126,8 @@ export const SavedSchedulesList: React.FC<SavedSchedulesListProps> = ({
       {/* Schedule items */}
       <div className="space-y-3">
         {schedules.length === 0 ? (
-          <div className="text-center py-12 bg-surface-container-low rounded-xl flex flex-col items-center">
-            <div className="w-16 h-16 bg-primary-fixed rounded-2xl flex items-center justify-center mb-4 text-on-primary-fixed-variant">
+          <div className="text-center py-12 bg-surface-container-low border border-outline/40 rounded-xl flex flex-col items-center">
+            <div className="w-16 h-16 bg-success-container border border-primary/30 rounded-2xl flex items-center justify-center mb-4 text-primary-fixed">
               <Calendar size={30} />
             </div>
             <h4 className="text-lg font-bold text-on-surface mb-2">Sin horarios guardados</h4>
@@ -155,10 +155,10 @@ export const SavedSchedulesList: React.FC<SavedSchedulesListProps> = ({
                 key={schedule.id}
                 onClick={() => onOpen(schedule.id)}
                 className={`
-                  bg-surface-container-lowest rounded-xl p-4 transition-all duration-300 cursor-pointer group flex items-center gap-4 relative overflow-hidden
+                  bg-surface-container-low border rounded-2xl p-4 transition-all duration-300 cursor-pointer group flex items-center gap-4 relative overflow-hidden
                   ${isSelected
-                    ? 'shadow-editorial-lg ring-2 ring-primary/20'
-                    : 'editorial-shadow hover:shadow-editorial-lg'
+                    ? 'border-primary/50 ring-2 ring-primary/30 shadow-editorial'
+                    : 'border-outline/40 hover:border-primary/40 hover:shadow-editorial'
                   }
                 `}
               >
@@ -177,13 +177,13 @@ export const SavedSchedulesList: React.FC<SavedSchedulesListProps> = ({
                 </div>
 
                 {/* Ícono */}
-                <div className="w-12 h-12 bg-primary-fixed rounded-xl flex items-center justify-center text-on-primary-fixed-variant shrink-0 group-hover:scale-105 transition-transform duration-200">
+                <div className="w-12 h-12 bg-success-container border border-primary/30 rounded-xl flex items-center justify-center text-primary-fixed shrink-0 group-hover:scale-105 transition-transform duration-200">
                   <Calendar size={22} />
                 </div>
 
                 {/* Contenido */}
                 <div className="flex-grow min-w-0">
-                  <h4 className="font-bold text-on-surface text-base truncate group-hover:text-primary transition-colors duration-200 text-left">
+                  <h4 className="font-bold text-on-surface text-base truncate group-hover:text-primary-fixed transition-colors duration-200 text-left">
                     {schedule.title}
                   </h4>
                   <p className="text-xs text-on-surface-variant font-medium uppercase tracking-wider mt-0.5 text-left">

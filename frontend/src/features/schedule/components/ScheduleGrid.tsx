@@ -140,14 +140,14 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
         };
       case 'DEFAULT':
       default:
-        // Academic Curator DEFAULT — verde menta
+        // Academic Cyber Portal DEFAULT — oscuro
         return {
-          container: 'bg-surface-container-lowest rounded-[2rem] border border-outline-variant/20 overflow-hidden editorial-shadow p-2',
-          header: 'bg-surface-container-high text-on-surface border-r border-outline-variant/15 font-bold rounded-xl py-3 m-1',
-          timeCol: 'bg-surface-container-lowest text-on-surface-variant border-r border-outline-variant/15',
-          gridBg: 'bg-surface-container-lowest',
-          gridLine: 'border-outline-variant/15',
-          dayCol: 'border-r border-outline-variant/15',
+          container: 'bg-surface-container-lowest rounded-[2rem] border border-outline/40 overflow-hidden editorial-shadow p-2',
+          header: 'bg-surface-container-high text-on-surface border-r border-outline/30 font-bold rounded-xl py-3 m-1',
+          timeCol: 'bg-surface-container-lowest text-on-surface-variant border-r border-outline/30',
+          gridBg: 'bg-surface-container-lowest cyber-grid',
+          gridLine: 'border-outline/25',
+          dayCol: 'border-r border-outline/25',
           event: (color: string) => {
             const textColor = getTextColor(color);
             return {
@@ -157,7 +157,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                 color: textColor,
                 borderLeftColor: textColor,
                 borderLeftWidth: '4px',
-                boxShadow: '0 6px 16px rgba(0,0,0,0.08)',
+                boxShadow: '0 6px 16px rgba(0,0,0,0.35)',
               },
             };
           },
@@ -264,7 +264,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
       </div>
 
       {virtualClasses.length > 0 && (
-        <div className="bg-surface-container-low border border-outline-variant/30 rounded-[2rem] p-6 shadow-editorial">
+        <div className="bg-surface-container-low border border-outline/40 rounded-[2rem] p-6 shadow-editorial">
           <h3 className="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
             Materias Virtuales / Sin Horario Fijo
           </h3>
@@ -272,7 +272,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
             {virtualClasses.map((session) => (
               <div
                 key={session.id}
-                className="bg-surface-container-lowest p-4 rounded-2xl shadow-sm border border-outline-variant/20 border-l-4 hover:shadow-editorial transition-all"
+                className="bg-surface-container p-4 rounded-2xl border border-outline/40 border-l-4 hover:border-primary/40 hover:shadow-editorial transition-all"
                 style={{ borderLeftColor: session.color || FALLBACK_COLOR }}
                 onClick={() => setSelected(session)}
                 role="button"
@@ -283,7 +283,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                 <p className="text-xs text-on-surface-variant mt-1.5 break-words whitespace-normal leading-tight font-medium">
                   Docente: {session.teacher || 'N/A'}
                 </p>
-                <div className="mt-2 inline-block px-2.5 py-0.5 bg-primary-fixed/20 text-on-primary-fixed-variant text-[10px] rounded-full font-bold">
+                <div className="mt-2 inline-block px-2.5 py-0.5 bg-success-container border border-primary/30 text-primary-fixed text-[10px] rounded-full font-bold">
                   VIRTUAL
                 </div>
               </div>
@@ -334,7 +334,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                 </div>
                 <div className="flex flex-col gap-1 p-3 bg-surface-container-low rounded-xl">
                   <span className="text-[10px] text-outline uppercase font-bold tracking-wider">Piso</span>
-                  <span className="text-on-surface text-base font-bold text-primary">{selected.floor || 'N/A'}</span>
+                  <span className="text-base font-bold text-primary-fixed">{selected.floor || 'N/A'}</span>
                 </div>
               </div>
             </div>

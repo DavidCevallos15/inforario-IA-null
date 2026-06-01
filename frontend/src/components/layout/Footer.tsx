@@ -3,7 +3,7 @@ import { Github, Phone, MapPin, Sparkles } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-surface-container-high mt-auto">
+    <footer className="bg-surface-container-low border-t border-outline/40 mt-auto">
       <div className="max-w-7xl mx-auto px-8 py-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
         {/* Brand */}
         <div>
@@ -53,7 +53,7 @@ const Footer: React.FC = () => {
       {/* Bottom bar */}
       <div className="border-t border-outline-variant/20 py-4 text-center">
         <p className="text-xs text-on-surface-variant">
-          © {new Date().getFullYear()} Inforario v3.0 — "The Academic Curator" · UTM · Todos los derechos reservados
+          © {new Date().getFullYear()} Inforario v4.0 — "Academic Cyber Portal" · UTM · Todos los derechos reservados
         </p>
       </div>
     </footer>

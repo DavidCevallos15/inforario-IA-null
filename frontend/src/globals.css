@@ -1,83 +1,92 @@
-/* Global styles — Inforario v3.0 "The Academic Curator" */
+/* Global styles — Inforario v4.0 "Academic Cyber Portal" */
 
 :root {
-  --color-background:              #fbf9f8;
-  --color-surface:                 #fbf9f8;
-  --color-surface-bright:          #fbf9f8;
-  --color-surface-dim:             #dcd9d9;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low:   #f6f3f2;
-  --color-surface-container:       #f0eded;
-  --color-surface-container-high:  #eae8e7;
-  --color-surface-container-highest: #e4e2e1;
-  --color-surface-variant:         #e4e2e1;
+  /* Superficies oscuras */
+  --color-background:               #0a0e1a;
+  --color-surface:                  #0c111f;
+  --color-surface-bright:           #141b2d;
+  --color-surface-dim:              #070a12;
+  --color-surface-container-lowest: #090d18;
+  --color-surface-container-low:    #111829;
+  --color-surface-container:        #151d31;
+  --color-surface-container-high:   #1b2540;
+  --color-surface-container-highest: #22304d;
+  --color-surface-variant:          #1b2540;
 
-  --color-primary:                 #004925;
-  --color-primary-container:       #006334;
-  --color-primary-fixed:           #a1f5b8;
-  --color-primary-fixed-dim:       #86d89d;
-  --color-inverse-primary:         #86d89d;
+  /* Primario — Verde UTM */
+  --color-primary:                  #15803d;
+  --color-primary-container:        #1a9850;
+  --color-primary-fixed:            #4ade80;
+  --color-primary-fixed-dim:        #34d399;
+  --color-inverse-primary:          #4ade80;
 
-  --color-secondary:               #7c5800;
-  --color-secondary-container:     #fcb812;
-  --color-secondary-fixed:         #ffdea7;
-  --color-secondary-fixed-dim:     #ffbb1e;
+  /* Secundario — Dorado UTM */
+  --color-secondary:                #fcb812;
+  --color-secondary-container:      #fbbf24;
+  --color-secondary-fixed:          #fcd34d;
+  --color-secondary-fixed-dim:      #fbbf24;
 
-  --color-on-surface:              #1b1c1c;
-  --color-on-surface-variant:      #3f4940;
-  --color-on-primary:              #ffffff;
-  --color-on-primary-container:    #8adda1;
-  --color-on-primary-fixed:        #00210e;
-  --color-on-primary-fixed-variant: #00522a;
-  --color-on-secondary:            #ffffff;
-  --color-on-secondary-container:  #6a4b00;
-  --color-on-secondary-fixed:      #271900;
-  --color-on-secondary-fixed-variant: #5e4200;
+  /* Texto */
+  --color-on-surface:               #e8edf6;
+  --color-on-surface-variant:       #94a3b8;
+  --color-on-primary:               #ffffff;
+  --color-on-primary-container:     #ffffff;
+  --color-on-secondary:             #1b1100;
+  --color-on-secondary-container:   #1b1100;
 
-  --color-tertiary:                #393f43;
-  --color-tertiary-container:      #50565b;
-  --color-tertiary-fixed:          #dee3e8;
-  --color-tertiary-fixed-dim:      #c1c7cc;
-  --color-on-tertiary:             #ffffff;
-  --color-on-tertiary-container:   #c5cbd0;
-  --color-on-tertiary-fixed:       #161c20;
+  /* Sistema */
+  --color-outline:                  #334155;
+  --color-outline-variant:          #26324a;
+  --color-error:                    #f87171;
+  --color-error-container:          #3a1212;
+  --color-inverse-surface:          #e8edf6;
+  --color-inverse-on-surface:       #0a0e1a;
 
-  --color-outline:                 #6f7a70;
-  --color-outline-variant:         #bfc9be;
-  --color-error:                   #ba1a1a;
-  --color-error-container:         #ffdad6;
-  --color-on-error:                #ffffff;
-  --color-on-error-container:      #93000a;
-  --color-inverse-surface:         #303030;
-  --color-inverse-on-surface:      #f3f0f0;
-
-  /* Sombras tintadas UTM */
-  --shadow-editorial:    0 20px 40px rgba(0, 73, 37, 0.06);
-  --shadow-editorial-lg: 0 24px 48px rgba(0, 73, 37, 0.12);
+  /* Sombras */
+  --shadow-editorial:    0 16px 40px rgba(0, 0, 0, 0.45);
+  --shadow-editorial-lg: 0 24px 60px rgba(0, 0, 0, 0.6);
 }
 
 body {
   margin: 0;
   padding: 0;
-  background-color: #fbf9f8;
-  color: #1b1c1c;
+  background-color: #0a0e1a;
+  color: #e8edf6;
   font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Resplandor ambiental de fondo (efecto cyber) */
+.cyber-bg {
+  background-color: #0a0e1a;
+  background-image:
+    radial-gradient(circle at 0% 0%, rgba(21, 128, 61, 0.10) 0%, transparent 45%),
+    radial-gradient(circle at 100% 0%, rgba(252, 184, 18, 0.06) 0%, transparent 40%),
+    radial-gradient(circle at 50% 120%, rgba(21, 128, 61, 0.08) 0%, transparent 50%);
+}
+
+/* Retícula sutil para el calendario */
+.cyber-grid {
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+  background-size: 100% 56px;
 }
 
 /* Scrollbar personalizada — tono verde UTM */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #f0eded;
+  background: #0c111f;
 }
 ::-webkit-scrollbar-thumb {
-  background: #bfc9be;
+  background: #26324a;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #004925;
+  background: #15803d;
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -91,7 +100,15 @@ body {
   box-shadow: var(--shadow-editorial-lg);
 }
 
-/* Animación pulse verde UTM (dorado como acento) */
+/* Borde con resplandor para el item activo del sidebar */
+.glass-panel {
+  background: rgba(17, 24, 41, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(38, 50, 74, 0.6);
+}
+
+/* Animación pulse dorado UTM */
 @keyframes pulse-utm {
   0%, 100% {
     opacity: 1;
@@ -135,8 +152,8 @@ body {
   text-transform: uppercase;
 }
 
-/* Selection brand color */
+/* Selección de texto */
 ::selection {
-  background: rgba(161, 245, 184, 0.4);
-  color: #004925;
+  background: rgba(74, 222, 128, 0.3);
+  color: #e8edf6;
 }

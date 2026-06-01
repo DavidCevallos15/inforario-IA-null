@@ -104,10 +104,10 @@ export const DropZone: React.FC<DropZoneProps> = ({ onUpload, isProcessing }) =>
           />
 
           {/* Ícono upload */}
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-5 transition-all duration-300
-            ${dragActive ? 'bg-primary-fixed scale-110' : 'bg-surface-container-highest'}`}
+          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-5 transition-all duration-300 border
+            ${dragActive ? 'bg-primary border-primary scale-110' : 'bg-success-container border-primary/30'}`}
           >
-            <Upload size={28} className={dragActive ? 'text-on-primary-fixed-variant' : 'text-on-surface-variant'} />
+            <Upload size={28} className={dragActive ? 'text-on-primary' : 'text-primary-fixed'} />
           </div>
 
           <h3 className="text-xl font-bold text-on-surface mb-2">Cargar Horario Académico</h3>
@@ -130,10 +130,10 @@ export const DropZone: React.FC<DropZoneProps> = ({ onUpload, isProcessing }) =>
           <div className="mt-4 text-xs text-outline">Formato soportado: PDF</div>
         </motion.div>
       ) : (
-        <Card className="bg-surface-container-lowest rounded-[2rem] p-6 border border-outline-variant/30">
+        <Card variant="flat" className="rounded-[2rem] p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-primary-fixed rounded-2xl flex items-center justify-center text-on-primary-fixed-variant shadow-sm">
+              <div className="w-12 h-12 bg-success-container border border-primary/30 rounded-2xl flex items-center justify-center text-primary-fixed">
                 <FileText size={22} />
               </div>
               <div className="text-left">

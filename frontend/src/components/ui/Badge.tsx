@@ -13,12 +13,12 @@ export const Badge: React.FC<BadgeProps> = ({
   const baseStyle = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider select-none";
 
   const variants = {
-    primary: "bg-primary-fixed text-on-primary-fixed-variant",
-    secondary: "bg-secondary-container text-on-secondary-container",
-    error: "bg-error-container text-error",
-    success: "bg-success-container text-success", // Custom if success tokens exist, else HSL custom
-    warning: "bg-warning-container text-warning",
-    info: "bg-info-container text-info"
+    primary: "bg-success-container text-primary-fixed border border-primary/30",
+    secondary: "bg-warning-container text-secondary border border-secondary/30",
+    error: "bg-error-container text-on-error-container border border-error/30",
+    success: "bg-success-container text-success border border-primary/30",
+    warning: "bg-warning-container text-warning border border-secondary/30",
+    info: "bg-info-container text-info border border-info/30",
   };
 
   return (

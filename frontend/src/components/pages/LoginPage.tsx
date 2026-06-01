@@ -153,129 +153,162 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
     }
   };
 
+  const inputClass =
+    "w-full rounded-xl border border-outline bg-surface-container-high px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/60 transition-all focus:border-primary-fixed focus:outline-none focus:ring-2 focus:ring-primary/30";
+  const labelClass = "text-[0.7rem] font-bold uppercase tracking-wider text-primary-fixed";
+
   return (
-    <div className="min-h-[calc(100vh-80px)] w-full flex items-center justify-center p-4 relative z-10">
-      {/* Container */}
-      <div className="bg-surface-container-lowest rounded-3xl editorial-shadow w-full max-w-md max-h-[calc(100vh-40px)] overflow-y-auto relative flex flex-col border border-outline-variant/15">
-        
-        {/* Close/Back Button */}
-        <button 
-          onClick={handleClose} 
-          className="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface transition-colors z-20 bg-surface-container p-2 rounded-full"
+    <div className="cyber-bg relative flex min-h-screen w-full">
+      {/* Left hero */}
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden p-12 lg:flex">
+        <img src="/login-library.png" alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-40" />
+        <div className="absolute inset-0 bg-gradient-to-br from-background/85 via-background/70 to-background" />
+
+        <div className="relative z-10 flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-glow-primary">
+            <GraduationCap size={22} className="text-on-primary" />
+          </span>
+          <span className="text-lg font-extrabold tracking-tight text-primary-fixed">INFORARIO</span>
+        </div>
+
+        <div className="relative z-10 max-w-md">
+          <h1 className="display-lg text-balance text-on-surface">
+            Tu vida académica, <span className="text-primary-fixed">curada.</span>
+          </h1>
+          <p className="mt-6 body-lg max-w-sm text-pretty text-on-surface-variant">
+            Accede a tus horarios, recursos institucionales y tu agenda UTM en una experiencia digital refinada.
+          </p>
+        </div>
+
+        <div className="relative z-10 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-on-surface-variant">
+          <span className="h-2 w-2 rounded-full bg-secondary animate-pulse-utm" />
+          Portal Institucional v4.0
+        </div>
+      </div>
+
+      {/* Right form panel */}
+      <div className="relative flex w-full items-center justify-center px-6 py-12 lg:w-1/2">
+        <button
+          onClick={handleClose}
+          className="absolute right-6 top-6 z-20 flex items-center gap-1.5 rounded-full bg-surface-container-high px-3 py-2 text-xs font-semibold text-on-surface-variant transition-colors hover:text-on-surface"
         >
-          <X size={20} />
+          <X size={16} /> Cerrar
         </button>
 
-        {/* Content Area */}
-        <div className="p-8">
-          
-          {/* Header Section */}
-          <div className="text-center mb-5">
-            <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-editorial">
-              <GraduationCap size={28} className="text-on-primary" />
-            </div>
-            <h2 className="text-xl font-bold text-on-surface">Bienvenido a Inforario</h2>
-            <p className="text-xs text-on-surface-variant mt-1">Gestiona tu horario universitario de manera inteligente</p>
+        <div className="w-full max-w-md">
+          {/* Mobile brand */}
+          <div className="mb-8 flex items-center gap-3 lg:hidden">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+              <GraduationCap size={22} className="text-on-primary" />
+            </span>
+            <span className="text-lg font-extrabold tracking-tight text-primary-fixed">INFORARIO</span>
           </div>
 
-          {/* View: Forgot Password Header Override */}
           {view === 'FORGOT_PASSWORD' ? (
-             <div className="mb-5">
-                <button 
-                  onClick={() => handleSwitchView('LOGIN')}
-                  className="flex items-center text-xs text-on-surface-variant hover:text-primary mb-4 transition-colors"
-                >
-                  <ArrowLeft size={14} className="mr-1" /> Volver al inicio
-                </button>
-                <h3 className="text-lg font-bold text-on-surface">Recuperar Contraseña</h3>
-                <p className="text-xs text-on-surface-variant">Ingresa tu correo para recibir un enlace de recuperación.</p>
-             </div>
-          ) : (
-            /* Tabs */
-            <div className="flex bg-surface-container border border-outline-variant/30 p-1 rounded-xl mb-5">
-              <button 
+            <div className="mb-7">
+              <button
                 onClick={() => handleSwitchView('LOGIN')}
-                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${view === 'LOGIN' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-primary'}`}
+                className="mb-5 flex items-center text-xs font-semibold text-on-surface-variant transition-colors hover:text-primary-fixed"
+              >
+                <ArrowLeft size={14} className="mr-1" /> Volver al inicio
+              </button>
+              <h2 className="text-3xl font-extrabold tracking-tight text-on-surface">Recuperar acceso</h2>
+              <p className="mt-2 text-sm text-on-surface-variant">Ingresa tu correo institucional para recibir un enlace de recuperación.</p>
+            </div>
+          ) : (
+            <div className="mb-7">
+              <h2 className="text-3xl font-extrabold tracking-tight text-on-surface">
+                {view === 'LOGIN' ? 'Bienvenido de nuevo' : 'Crea tu cuenta'}
+              </h2>
+              <p className="mt-2 text-sm text-on-surface-variant">
+                {view === 'LOGIN'
+                  ? 'Inicia sesión en tu cuenta de estudiante UTM.'
+                  : 'Regístrate con tu correo institucional (@utm.edu.ec).'}
+              </p>
+            </div>
+          )}
+
+          {/* Tabs */}
+          {view !== 'FORGOT_PASSWORD' && (
+            <div className="mb-6 flex gap-1 rounded-xl border border-outline/60 bg-surface-container p-1">
+              <button
+                onClick={() => handleSwitchView('LOGIN')}
+                className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-all ${view === 'LOGIN' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
               >
                 Iniciar Sesión
               </button>
-              <button 
+              <button
                 onClick={() => handleSwitchView('REGISTER')}
-                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${view === 'REGISTER' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant hover:text-primary'}`}
+                className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-all ${view === 'REGISTER' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
               >
                 Registrarse
               </button>
             </div>
           )}
 
-          {/* Error / Success Messages */}
           {error && (
-            <div className="mb-4 p-3 bg-destructive/10 text-destructive text-xs rounded-lg flex items-start gap-2 border border-destructive/20">
+            <div className="mb-4 flex items-start gap-2 rounded-xl border border-error/30 bg-error-container p-3 text-xs text-on-error-container">
               <AlertCircle size={14} className="mt-0.5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
           {successMsg && (
-            <div className="mb-4 p-3 bg-primary-fixed text-on-primary-fixed-variant text-xs rounded-lg flex items-start gap-2 border border-primary-fixed-dim/50">
+            <div className="mb-4 flex items-start gap-2 rounded-xl border border-primary/30 bg-success-container p-3 text-xs text-primary-fixed">
               <Check size={14} className="mt-0.5 shrink-0" />
               <span>{successMsg}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-3">
-            
-            {/* Full Name (Register Only) */}
+          <form onSubmit={handleSubmit} className="space-y-4">
             {view === 'REGISTER' && (
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-on-surface-variant">Nombre completo</label>
+              <div className="space-y-1.5">
+                <label className={labelClass}>Nombre completo</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
-                  <input 
-                    type="text" 
-                    required={view === 'REGISTER'}
+                  <input
+                    type="text"
+                    required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Juan Pérez"
-                    className="w-full pl-9 pr-4 py-2.5 bg-surface-container-lowest border border-outline-variant/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-on-surface placeholder:text-on-surface-variant/60"
+                    className={`${inputClass} pl-10`}
                   />
                 </div>
               </div>
             )}
 
-            {/* Email */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-on-surface-variant">Correo electrónico</label>
+            <div className="space-y-1.5">
+              <label className={labelClass}>Correo institucional</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="estudiante@utm.edu.ec"
-                  className="w-full pl-9 pr-4 py-2.5 bg-surface-container-lowest border border-outline-variant/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-on-surface placeholder:text-on-surface-variant/60"
+                  className={`${inputClass} pl-10`}
                 />
               </div>
             </div>
 
-            {/* Password */}
             {view !== 'FORGOT_PASSWORD' && (
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-on-surface-variant">Contraseña</label>
+              <div className="space-y-1.5">
+                <label className={labelClass}>Contraseña</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={16} />
-                  <input 
-                    type={showPassword ? "text" : "password"} 
+                  <input
+                    type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-9 pr-10 py-2.5 bg-surface-container-lowest border border-outline-variant/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm text-on-surface placeholder:text-on-surface-variant/60"
+                    className={`${inputClass} px-10`}
                   />
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary-fixed"
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -283,60 +316,63 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
               </div>
             )}
 
-            {/* Password Validation Indicators (Register Only) */}
             {view === 'REGISTER' && (
               <div className="space-y-2 pt-1">
-                <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
-                   <div 
-                      className={`h-full transition-all duration-300 ${isPasswordValid ? 'bg-primary-container' : 'bg-primary'}`}
-                      style={{ width: `${(Object.values(pwdValidations).filter(Boolean).length / 4) * 100}%` }}
-                   ></div>
+                <div className="h-1 w-full overflow-hidden rounded-full bg-surface-container-high">
+                  <div
+                    className={`h-full transition-all duration-300 ${isPasswordValid ? 'bg-primary-fixed' : 'bg-secondary'}`}
+                    style={{ width: `${(Object.values(pwdValidations).filter(Boolean).length / 4) * 100}%` }}
+                  />
                 </div>
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-on-surface-variant">
-                  <span className={`flex items-center gap-1 ${pwdValidations.length ? 'text-primary-container font-medium' : ''}`}>
+                  <span className={`flex items-center gap-1 ${pwdValidations.length ? 'font-medium text-primary-fixed' : ''}`}>
                     {pwdValidations.length ? <Check size={10} /> : null} 8+ caracteres
                   </span>
-                  <span className={`flex items-center gap-1 ${pwdValidations.uppercase ? 'text-primary-container font-medium' : ''}`}>
+                  <span className={`flex items-center gap-1 ${pwdValidations.uppercase ? 'font-medium text-primary-fixed' : ''}`}>
                     {pwdValidations.uppercase ? <Check size={10} /> : null} Mayúscula
                   </span>
-                  <span className={`flex items-center gap-1 ${pwdValidations.lowercase ? 'text-primary-container font-medium' : ''}`}>
+                  <span className={`flex items-center gap-1 ${pwdValidations.lowercase ? 'font-medium text-primary-fixed' : ''}`}>
                     {pwdValidations.lowercase ? <Check size={10} /> : null} Minúscula
                   </span>
-                  <span className={`flex items-center gap-1 ${pwdValidations.number ? 'text-primary-container font-medium' : ''}`}>
+                  <span className={`flex items-center gap-1 ${pwdValidations.number ? 'font-medium text-primary-fixed' : ''}`}>
                     {pwdValidations.number ? <Check size={10} /> : null} Número
                   </span>
                 </div>
               </div>
             )}
 
-            {/* Forgot Password Link */}
             {view === 'LOGIN' && (
               <div className="flex justify-end">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => handleSwitchView('FORGOT_PASSWORD')}
-                  className="text-xs text-primary hover:text-primary-container font-medium"
+                  className="text-xs font-semibold text-secondary hover:text-secondary-container"
                 >
                   ¿Olvidaste tu contraseña?
                 </button>
               </div>
             )}
 
-            {/* Submit Button */}
-            <button 
+            <button
               type="submit"
               disabled={loading || (view === 'REGISTER' && !isPasswordValid)}
-              className="w-full py-2.5 bg-primary hover:bg-primary-container text-on-primary font-bold rounded-xl shadow-editorial transition-all transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-bold text-on-primary transition-all hover:bg-primary-container hover:shadow-glow-primary active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {loading ? (
-                <span className="inline-block w-4 h-4 border-2 border-on-primary/30 border-t-on-primary rounded-full animate-spin"></span>
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-on-primary/30 border-t-on-primary" />
+              ) : view === 'LOGIN' ? (
+                'Iniciar Sesión'
+              ) : view === 'REGISTER' ? (
+                'Crear cuenta'
               ) : (
-                view === 'LOGIN' ? 'Iniciar Sesión' : view === 'REGISTER' ? 'Crear cuenta' : 'Enviar enlace'
+                'Enviar enlace'
               )}
             </button>
           </form>
 
-         
+          <p className="mt-8 text-center text-[0.7rem] font-semibold uppercase tracking-widest text-on-surface-variant">
+            Acceso institucional seguro
+          </p>
         </div>
       </div>
     </div>
