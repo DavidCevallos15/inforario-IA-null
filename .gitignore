@@ -32,3 +32,6 @@ dist-ssr
 .impeccable/review/
 .impeccable/questions/
 .impeccable/decision-payload.json
+
+# Configuración local del servidor de desarrollo
+.claude/launch.json

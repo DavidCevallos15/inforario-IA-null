@@ -14,7 +14,7 @@ backend/    Supabase: configuración y Edge Functions
 ## Flujo de procesamiento
 
 1. El PDF se lee en el navegador con pdf.js (`features/uploader/utils/pdfText.ts`).
-2. El texto se envía a la Edge Function `extract-schedule`; si falla, se usa el parser local por coordenadas (`sguRegexParser.ts`).
+2. El parser local por coordenadas (`sguRegexParser.ts`) extrae primero las materias. Si no reconoce el formato, se envía el texto sin los datos personales del encabezado a la Edge Function `extract-schedule`.
 3. Facultad y período siempre se leen localmente del encabezado del PDF.
 4. Se asignan colores por materia y se marcan los choques de horario.
 5. Los usuarios autenticados guardan sus horarios en la tabla `schedules`; los invitados trabajan solo en local.
@@ -35,6 +35,7 @@ Opcional: copia `frontend/.env.example` a `frontend/.env.local` para apuntar a o
 ```bash
 npm test             # pruebas unitarias (Vitest)
 npm run typecheck    # TypeScript en modo estricto
+npm run lint         # revisión de código con ESLint
 npm run build        # build de producción
 ```
 
