@@ -1,26 +1,20 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { LayoutDashboard, FileText, PenTool } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { User } from '@supabase/supabase-js';
-import { AppView, ScheduleSummary, UserProfile } from '../../types';
-import { DropZone as Uploader } from '../uploader/components/DropZone';
-import { SavedSchedulesList as ScheduleList } from './components/SavedSchedulesList';
-
-interface FeatureCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}
-
-const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) => (
-  <div className="group bg-surface-container-low hover:bg-surface-container rounded-[1.5rem] p-8 transition-all duration-300 editorial-shadow hover:shadow-[0_24px_48px_rgba(0,73,37,0.12)]">
-    <div className="w-14 h-14 rounded-2xl bg-primary-fixed flex items-center justify-center text-on-primary-fixed-variant mb-6 group-hover:scale-110 transition-transform duration-300">
-      {icon}
-    </div>
-    <h4 className="text-xl font-bold text-on-surface mb-3">{title}</h4>
-    <p className="text-on-surface-variant leading-relaxed text-sm">{description}</p>
-  </div>
-);
+import { ScheduleSummary, UserProfile } from '../../types';
+import { DropZone } from '../uploader/components/DropZone';
+import { SavedSchedulesList } from './components/SavedSchedulesList';
+import { BeforeAfter } from './components/BeforeAfter';
+import { SguReportPreview } from './components/SguReportPreview';
+import { DemoDayList, DemoWeekGrid } from './components/DemoWeek';
+import { Reveal } from '../../components/notebook/Reveal';
+import { InkCircle } from '../../components/notebook/InkCircle';
+import { SIGNATURE } from '../../components/notebook/signaturePath';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { assignSubjectColors, parseSguTextItems, resolveConflicts } from '../uploader/utils/sguRegexParser';
+import type { TextItem } from '../uploader/utils/pdfText';
+import sguReportFixture from '../uploader/utils/__fixtures__/sguReport.json';
+import { dur, ease } from '../../lib/motion';
 
 interface LandingPageProps {
   sessionUser: User | null;
@@ -33,8 +27,27 @@ interface LandingPageProps {
   onOpenSchedule: (id: string) => void;
   onDeleteSchedule: (id: string) => void;
   onBulkDelete: (ids: string[]) => void;
-  onNavigate: (view: AppView) => void;
 }
+
+const STEPS = [
+  {
+    title: 'Descarga tu PDF del SGU',
+    text: 'Entra al SGU de la UTM y descarga tu reporte Horario de clases en PDF.',
+  },
+  {
+    title: 'Súbelo aquí',
+    text: 'Tócalo o arrástralo al recuadro. Se lee en tu dispositivo en un par de segundos.',
+  },
+  {
+    title: 'Llévalo a tu calendario',
+    text: 'Descárgalo en .ics para Google Calendar, Apple u Outlook, o en PDF para imprimirlo.',
+  },
+];
+
+const scrollToUploader = () => {
+  document.getElementById('subir')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  window.setTimeout(() => document.getElementById('uploader-select-btn')?.focus({ preventScroll: true }), 500);
+};
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   sessionUser,
@@ -47,252 +60,225 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onOpenSchedule,
   onDeleteSchedule,
   onBulkDelete,
-  onNavigate,
 }) => {
-  const fadeUpVariants = {
-    hidden: { opacity: 0, y: 24 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.7,
-        delay: 0.1 + i * 0.1,
-        ease: [0.25, 0.4, 0.25, 1],
-      },
-    }),
-  };
+  if (sessionUser) {
+    const displayName =
+      userProfile?.full_name?.split(' ')[0] ||
+      (sessionUser.user_metadata?.full_name as string | undefined)?.split(' ')[0] ||
+      sessionUser.email?.split('@')[0] ||
+      'estudiante';
 
-  const displayName =
-    userProfile?.full_name ||
-    sessionUser?.user_metadata?.full_name ||
-    sessionUser?.email?.split("@")[0] ||
-    "estudiante";
+    return (
+      <div className="mx-auto w-full max-w-4xl pb-16 pt-8 sm:pt-12">
+        <Reveal>
+          <p className="ink text-2xl font-bold">Hola, {displayName}</p>
+          <h1 className="mt-1 text-4xl font-extrabold tracking-[-0.03em] text-on-surface sm:text-5xl">Tus horarios</h1>
+        </Reveal>
+
+        <Reveal delay={0.08} className="mt-8">
+          {savedSchedules.length > 0 ? (
+            <SavedSchedulesList
+              schedules={savedSchedules}
+              onOpen={onOpenSchedule}
+              onDelete={onDeleteSchedule}
+              onBulkDelete={onBulkDelete}
+              onCreateNew={() => {
+                setShowUploaderInDashboard(true);
+                window.setTimeout(scrollToUploader, 50);
+              }}
+            />
+          ) : (
+            <p className="max-w-[52ch] text-base leading-7 text-on-surface-variant">
+              Todavía no tienes horarios guardados. Sube tu PDF del SGU y quedará guardado en tu cuenta.
+            </p>
+          )}
+        </Reveal>
+
+        {(showUploaderInDashboard || savedSchedules.length === 0) && (
+          <Reveal delay={0.12} className="mt-10" id="subir">
+            <DropZone onUpload={onUpload} isProcessing={isProcessing} variant="compact" />
+          </Reveal>
+        )}
+      </div>
+    );
+  }
+
+  return <GuestLanding isProcessing={isProcessing} onUpload={onUpload} />;
+};
+
+const GuestLanding: React.FC<{ isProcessing: boolean; onUpload: (file: File) => Promise<void> }> = ({
+  isProcessing,
+  onUpload,
+}) => {
+  const reduce = useReducedMotion();
+  const isWide = useMediaQuery('(min-width: 768px)');
+
+  // La demostración usa el parser real sobre un reporte del SGU anonimizado
+  const demo = useMemo(() => {
+    const items = sguReportFixture as TextItem[];
+    // Único dato inventado de la demo (y se dice en el texto): Estadística, que en el reporte no tiene
+    // horario, se ubica el lunes para mostrar cómo se marca un choque
+    const sessions = parseSguTextItems(items).sessions.map((s) =>
+      s.subject === 'ESTADISTICA'
+        ? { ...s, day: 'Lunes' as const, startTime: '10:00', endTime: '12:00', location: 'Aula 105 - Piso 1 - Ciencias Básicas I', floor: '1' }
+        : s
+    );
+    return { items, sessions: resolveConflicts(assignSubjectColors(sessions)) };
+  }, []);
+
+  const enter = (delay: number) =>
+    reduce
+      ? {}
+      : {
+          initial: { opacity: 0.4, y: 18 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: dur.reveal, ease: ease.reveal, delay },
+        };
 
   return (
-    <div className="flex flex-col items-center pb-16 w-full relative z-10">
-      {/* Decorative Blob */}
-      <div
-        className="fixed top-0 right-0 w-[600px] h-[600px] rounded-full -z-10 pointer-events-none"
-        style={{
-          background: "radial-gradient(circle, rgba(0,73,37,0.04) 0%, transparent 70%)",
-        }}
-      />
+    <div className="w-full">
+      {/* ---------- Portada: la acción vive aquí ---------- */}
+      <section className="pb-16 pt-8 sm:pb-24 sm:pt-14" aria-labelledby="hero-title">
+        <motion.h1
+          id="hero-title"
+          {...enter(0)}
+          className="max-w-[16ch] text-[2.6rem] font-extrabold leading-[1.08] tracking-[-0.035em] text-on-surface sm:text-6xl lg:text-7xl"
+        >
+          Tu horario del SGU, <span className="highlight">pasado en limpio.</span>
+        </motion.h1>
+        <motion.p
+          {...enter(0.08)}
+          className="mt-5 max-w-[44ch] text-lg leading-7 text-on-surface-variant sm:text-xl sm:leading-8"
+        >
+          Sube el PDF que descargas del SGU y mira tu semana: aulas, edificios, docentes y choques de horario.
+        </motion.p>
+        <motion.div {...enter(0.16)} id="subir" className="mt-10 max-w-3xl">
+          <DropZone onUpload={onUpload} isProcessing={isProcessing} />
+        </motion.div>
+      </section>
 
-      {sessionUser ? (
-        <>
-          {/* Logged In Dashboard welcome */}
-          <motion.div
-            custom={0}
-            variants={fadeUpVariants}
-            initial="hidden"
-            animate="visible"
-            className="w-full max-w-5xl mx-auto pt-10 px-4"
-          >
-            <div className="bg-surface-container-lowest rounded-[1.8rem] p-6 md:p-8 editorial-shadow border border-outline-variant/20">
-              <span className="label-md text-secondary block mb-3 font-semibold uppercase tracking-wider text-xs">
-                GESTOR DE HORARIOS
-              </span>
-              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-on-surface mb-2">
-                Bienvenido, <span className="text-primary">{displayName}</span>
-              </h1>
-              <p className="text-on-surface-variant mb-6 text-sm md:text-base leading-relaxed">
-                Aquí puedes ver tus horarios guardados, crear uno nuevo y exportarlos cuando lo necesites.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => {
-                    const uploaderBtn = document.getElementById("uploader-select-btn");
-                    if (uploaderBtn) {
-                      uploaderBtn.click();
-                    } else {
-                      setShowUploaderInDashboard(true);
-                    }
-                  }}
-                  className="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-semibold hover:bg-primary-container hover:text-on-primary-container transition-colors duration-200 text-sm"
-                >
-                  Crear mi horario
-                </button>
-                <button
-                  onClick={() => onNavigate(AppView.ABOUT)}
-                  className="bg-surface-container text-on-surface px-5 py-2.5 rounded-xl font-semibold hover:bg-surface-container-high transition-colors duration-200 text-sm"
-                >
-                  Ver guía
-                </button>
+      {/* ---------- Antes y después ---------- */}
+      <section className="pb-20 sm:pb-28" aria-labelledby="demo-title">
+        <Reveal>
+          <h2 id="demo-title" className="text-3xl font-extrabold tracking-[-0.03em] text-on-surface sm:text-4xl">
+            Del PDF a tu semana
+          </h2>
+          <p className="mt-3 max-w-[56ch] text-base leading-7 text-on-surface-variant sm:text-lg">
+            Un reporte real con los datos cambiados, más un choque de horario para que veas cómo se marca. Desliza la línea:
+            a un lado lo que te da el SGU, al otro lo que ves en Inforario.
+          </p>
+        </Reveal>
+        <Reveal delay={0.08} className="mt-8">
+          <BeforeAfter
+            key={isWide ? 'wide' : 'narrow'}
+            className={isWide ? 'aspect-[16/10]' : 'aspect-[3/4]'}
+            beforeLabel="PDF del SGU"
+            afterLabel="Inforario"
+            restAt={isWide ? 30 : 24}
+            before={<SguReportPreview items={demo.items} fit={isWide ? 'width' : 'height'} />}
+            after={
+              isWide ? <DemoWeekGrid sessions={demo.sessions} offsetPct={30} /> : <DemoDayList sessions={demo.sessions} offsetPct={24} />
+            }
+          />
+        </Reveal>
+      </section>
+
+      {/* ---------- Tres pasos ---------- */}
+      <section className="pb-20 sm:pb-28" aria-labelledby="pasos-title">
+        <Reveal>
+          <h2 id="pasos-title" className="text-3xl font-extrabold tracking-[-0.03em] text-on-surface sm:text-4xl">
+            Así de simple
+          </h2>
+        </Reveal>
+        <ol className="mt-8 grid gap-x-10 gap-y-8 md:grid-cols-[1.1fr_1fr_1fr]">
+          {STEPS.map((step, i) => (
+            <motion.li
+              key={step.title}
+              initial={reduce ? false : { opacity: 0.4, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.4 }}
+              transition={{ duration: dur.reveal, ease: ease.reveal, delay: i * 0.08 }}
+              // Escalonados como apuntes escritos uno debajo del otro
+              className={`flex items-start gap-3 ${i === 1 ? 'md:pt-12' : i === 2 ? 'md:pt-24' : ''}`}
+            >
+              <InkCircle delay={0.15 + i * 0.12}>{i + 1}</InkCircle>
+              <div className="pt-2">
+                <h3 className="text-lg font-extrabold text-on-surface">{step.title}</h3>
+                <p className="mt-1 max-w-[34ch] text-base leading-6 text-on-surface-variant">{step.text}</p>
               </div>
-            </div>
-          </motion.div>
+            </motion.li>
+          ))}
+        </ol>
+      </section>
 
-          {/* Saved Schedules */}
-          <motion.div
-            custom={1}
-            variants={fadeUpVariants}
-            initial="hidden"
-            animate="visible"
-            className="w-full max-w-5xl mt-8 px-4"
+      {/* ---------- Cierre: firma con esfero ---------- */}
+      <section className="pb-12 sm:pb-16" aria-label="Inforario">
+        <Signature />
+        <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+          <button
+            type="button"
+            onClick={scrollToUploader}
+            className="rounded-md bg-primary px-6 py-3.5 text-base font-bold text-on-primary shadow-editorial transition-colors duration-150 hover:bg-primary-container active:scale-[0.98]"
           >
-            <h2 className="text-xl md:text-2xl font-bold text-on-surface mb-4">
-              Tus horarios
-            </h2>
-
-            {savedSchedules.length > 0 ? (
-              <ScheduleList
-                schedules={savedSchedules}
-                onOpen={onOpenSchedule}
-                onDelete={onDeleteSchedule}
-                onBulkDelete={onBulkDelete}
-                onCreateNew={() => setShowUploaderInDashboard(true)}
-              />
-            ) : (
-              <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-8 text-center editorial-shadow">
-                <h3 className="text-2xl font-bold text-on-surface mb-2">
-                  Crea tu horario
-                </h3>
-                <p className="text-on-surface-variant mb-6 text-sm">
-                  Aún no tienes horarios guardados. Sube tu PDF del SGU para generar tu primer horario.
-                </p>
-              </div>
-            )}
-          </motion.div>
-
-          {/* Uploader container if requested */}
-          {(showUploaderInDashboard || savedSchedules.length === 0) && (
-            <motion.div
-              custom={2}
-              variants={fadeUpVariants}
-              initial="hidden"
-              animate="visible"
-              className="w-full max-w-2xl mt-8 px-4"
+            Subir mi PDF
+          </button>
+          <p className="text-sm text-on-surface-variant">
+            Hecho por{' '}
+            <a
+              href="https://github.com/DavidCevallos15"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-primary underline decoration-primary/40 hover:decoration-primary"
             >
-              <Uploader
-                onUpload={onUpload}
-                isProcessing={isProcessing}
-              />
-            </motion.div>
-          )}
-        </>
-      ) : (
-        <>
-          {/* Guest Hero Section */}
-          <div className="w-full max-w-4xl mx-auto pt-12 pb-10 px-4 text-center">
-            <motion.div
-              custom={0}
-              variants={fadeUpVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              <span className="label-md text-secondary block mb-6 font-bold tracking-widest text-xs">
-                GESTIÓN ACADÉMICA UTM
-              </span>
-            </motion.div>
-            
-            <motion.h1
-              custom={1}
-              variants={fadeUpVariants}
-              initial="hidden"
-              animate="visible"
-              className="text-4xl md:text-6xl font-extrabold tracking-tight text-on-surface mb-4 max-w-3xl mx-auto"
-            >
-              Transforma tu horario SGU en una{" "}
-              <span className="italic text-primary">
-                agenda digital impecable.
-              </span>
-            </motion.h1>
-
-            <motion.p
-              custom={2}
-              variants={fadeUpVariants}
-              initial="hidden"
-              animate="visible"
-              className="text-on-surface-variant max-w-xl mx-auto mb-8 text-sm md:text-lg leading-relaxed"
-            >
-              Carga tu PDF del reporte de matrícula UTM y obtén un horario digital interactivo en segundos.
-            </motion.p>
-
-            <motion.div
-              custom={3}
-              variants={fadeUpVariants}
-              initial="hidden"
-              animate="visible"
-              className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12"
-            >
-              <button
-                onClick={() => {
-                  const fileInput = document.getElementById("uploader-file-input");
-                  if (fileInput) fileInput.click();
-                }}
-                className="bg-secondary-container text-on-secondary-container px-8 py-4 rounded-xl font-bold text-lg shadow-editorial hover:scale-105 active:scale-95 transition-transform duration-200"
-              >
-                Cargar mi Horario
-              </button>
-              <button
-                onClick={() => onNavigate(AppView.ABOUT)}
-                className="text-on-surface-variant font-semibold hover:text-primary transition-colors duration-200 flex items-center gap-2 text-base"
-              >
-                Ver cómo funciona →
-              </button>
-            </motion.div>
-          </div>
-
-          {/* Guest Uploader Zone */}
-          <motion.div
-            custom={4}
-            variants={fadeUpVariants}
-            initial="hidden"
-            animate="visible"
-            className="w-full max-w-2xl px-4"
-          >
-            <Uploader
-              onUpload={onUpload}
-              isProcessing={isProcessing}
-            />
-          </motion.div>
-
-          {/* Guest Saved Schedules List if they exist locally */}
-          {savedSchedules.length > 0 && (
-            <motion.div
-              custom={5}
-              variants={fadeUpVariants}
-              initial="hidden"
-              animate="visible"
-              className="w-full max-w-4xl mt-14 px-4"
-            >
-              <ScheduleList
-                schedules={savedSchedules}
-                onOpen={onOpenSchedule}
-                onDelete={onDeleteSchedule}
-                onBulkDelete={onBulkDelete}
-                onCreateNew={() => setShowUploaderInDashboard(true)}
-              />
-            </motion.div>
-          )}
-        </>
-      )}
-
-      {/* Feature Cards Grid */}
-      <motion.div
-        custom={6}
-        variants={fadeUpVariants}
-        initial="hidden"
-        animate="visible"
-        className="mt-16 grid md:grid-cols-3 gap-6 max-w-5xl w-full px-4"
-      >
-        <FeatureCard
-          icon={<LayoutDashboard size={24} />}
-          title="Extracción Inteligente"
-          description="Convierte instantáneamente tu reporte de matrícula PDF en un horario digital interactivo y editable."
-        />
-        <FeatureCard
-          icon={<FileText size={24} />}
-          title="Exportación PDF"
-          description="Descarga tu horario en PDF de alta calidad listo para imprimir, con la paleta UTM."
-        />
-        <FeatureCard
-          icon={<PenTool size={24} />}
-          title="Personalización"
-          description="Ajusta colores por materia y temas visuales para que tu horario refleje tu estilo."
-        />
-      </motion.div>
+              DC.dev
+            </a>
+            , estudiante de la UTM.
+          </p>
+        </div>
+      </section>
     </div>
+  );
+};
+
+/**
+ * "Inforario" firmado con esfero: un solo trazo que se escribe de izquierda a
+ * derecha y termina en un rasgo que subraya la firma.
+ * El detector de vista va en el contenedor (un elemento oculto no intersecta).
+ */
+const Signature: React.FC = () => {
+  const reduce = useReducedMotion();
+  const [ex, ey] = SIGNATURE.end;
+  // El rasgo continúa desde el final de la "o" y vuelve por debajo de la palabra
+  const flourish = `M${ex} ${ey} C ${ex + 40} ${ey + 30}, ${ex + 10} ${ey + 112}, ${ex - 170} ${ey + 118} C ${ex - 380} ${ey + 124}, 160 ${ey + 116}, 24 ${ey + 104}`;
+  return (
+    <motion.div
+      className="w-full max-w-[42rem]"
+      initial={reduce ? false : 'hidden'}
+      whileInView="shown"
+      viewport={{ once: true, amount: 0.5 }}
+    >
+      <svg viewBox={`0 0 ${SIGNATURE.width + 40} ${SIGNATURE.height + 30}`} className="h-auto w-full overflow-visible" role="img" aria-label="Inforario">
+        <motion.path
+          d={SIGNATURE.d}
+          fill="none"
+          className="stroke-primary"
+          strokeWidth={8}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          variants={{ hidden: { pathLength: 0 }, shown: { pathLength: 1 } }}
+          transition={{ duration: 2.2, ease: [0.45, 0.05, 0.25, 1] }}
+        />
+        <motion.path
+          d={flourish}
+          fill="none"
+          className="stroke-primary"
+          strokeWidth={6}
+          strokeLinecap="round"
+          variants={{ hidden: { pathLength: 0 }, shown: { pathLength: 1 } }}
+          transition={{ duration: 0.8, ease: ease.disclosure, delay: 2.15 }}
+        />
+      </svg>
+    </motion.div>
   );
 };
 

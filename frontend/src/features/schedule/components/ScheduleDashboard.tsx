@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { User } from '@supabase/supabase-js';
 import {
-  GraduationCap,
   Calendar as CalIcon,
   ZoomOut,
   ZoomIn,
@@ -10,12 +9,13 @@ import {
   Download,
   ChevronDown,
   FileText,
-  Check,
+  AlertTriangle,
   PenTool,
 } from 'lucide-react';
 import { Schedule, ClassSession, ScheduleTheme, DAYS, UserProfile } from '../../../types';
 import { saveScheduleToDB } from '../../../services/supabase/supabaseClient';
 import { resolveConflicts } from '../../uploader/utils/sguRegexParser';
+import { toDisplayCase } from '../../../lib/text';
 import { generateICS } from '../../../services/ics/icsGenerator';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { ScheduleGrid } from './ScheduleGrid';
@@ -165,14 +165,15 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
 
       // --- Theme Configurations ---
       const themeConfig = {
+        // Cuaderno: hoja blanca, tinta azul y cuadrícula celeste
         DEFAULT: {
-          bg: [251, 249, 248],
-          textMain: [27, 28, 28],
-          textSec: [63, 73, 64],
-          headerFill: [0, 73, 37],
+          bg: [255, 255, 255],
+          textMain: [20, 33, 61],
+          textSec: [72, 86, 111],
+          headerFill: [29, 63, 168],
           headerText: [255, 255, 255],
-          gridLines: [191, 201, 190],
-          timeText: [0, 73, 37],
+          gridLines: [205, 220, 238],
+          timeText: [29, 63, 168],
           font: 'helvetica',
         },
         MINIMALIST: {
@@ -389,11 +390,12 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
         const cellY = startY + headerHeight + (startOffsetMins / 60) * hourHeight;
         const cellHeight = (durationMins / 60) * hourHeight;
 
-        let { r, g, b } = hexToRgb(session.color || '#22C55E');
+        let { r, g, b } = hexToRgb(session.color || '#f6e84b');
+        // Choques en el rojo del margen
         if (session.conflict) {
-          r = 255;
-          g = 0;
-          b = 110;
+          r = 196;
+          g = 32;
+          b = 54;
         }
 
         if (theme === 'MINIMALIST') {
@@ -435,8 +437,6 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
             'F'
           );
           const txtColor = getPdfTextColor(r, g, b);
-          doc.setFillColor(txtColor[0], txtColor[1], txtColor[2]);
-          doc.rect(cellX + 0.5, cellY + 0.5, 1.5, cellHeight - 1, 'F');
           doc.setTextColor(txtColor[0], txtColor[1], txtColor[2]);
         } else if (theme === 'SCHOOL') {
           doc.setFillColor(r, g, b);
@@ -530,7 +530,7 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
           const cardY = virtualCardTop + row * (virtualCardHeight + 4);
           if (cardY + virtualCardHeight > pageHeight - 10) return;
 
-          const { r, g, b } = hexToRgb(session.color || '#a1f5b8');
+          const { r, g, b } = hexToRgb(session.color || '#f6e84b');
 
           let cardBg = [255, 255, 255];
           const cardText = style.textMain;
@@ -573,214 +573,145 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
     }
   };
 
+  const subjectCount = new Set(currentSchedule.sessions.map((s) => s.subject)).size;
+  const conflictCount = currentSchedule.sessions.filter((s) => s.conflict).length;
+
   return (
-    <div className="animate-in fade-in duration-500 pt-2 relative z-10">
-      {/* Horario Header */}
-      <div className="bg-surface-container-lowest rounded-xl editorial-shadow p-4 mb-4 relative z-50">
-        <div className="flex flex-col lg:flex-row justify-between gap-4 items-start lg:items-center">
-          <div className="flex items-start gap-4 w-full lg:w-auto">
-            <div className="hidden sm:flex w-12 h-12 bg-primary rounded-xl items-center justify-center text-on-primary shrink-0">
-              <GraduationCap size={24} />
-            </div>
-            <div className="flex-grow">
-              <div className="flex items-center gap-3 mb-1">
-                {isEditingTitle ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={tempTitle}
-                      onChange={(e) => setTempTitle(e.target.value)}
-                      className="text-xl md:text-2xl font-bold text-on-surface border-b-2 border-primary outline-none bg-transparent min-w-[200px]"
-                      autoFocus
-                      onBlur={saveTitle}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') saveTitle();
-                        if (e.key === 'Escape') {
-                          setTempTitle(currentSchedule.title);
-                          setIsEditingTitle(false);
-                        }
-                      }}
-                    />
-                    <button
-                      onClick={saveTitle}
-                      className="text-primary hover:text-primary-container"
-                    >
-                      <Check size={20} />
-                    </button>
-                  </div>
-                ) : (
-                  <h2
-                    className="text-xl md:text-2xl font-bold text-on-surface flex items-center gap-2 group cursor-pointer"
-                    onClick={startEditingTitle}
-                  >
-                    {currentSchedule.title}
-                    <span className="opacity-0 group-hover:opacity-100 text-on-surface-variant">
-                      <PenTool size={14} />
-                    </span>
-                  </h2>
-                )}
-              </div>
-              <p className="text-on-surface-variant font-medium text-sm mb-2 text-left">
-                {currentSchedule.faculty || 'FACULTAD DE CIENCIAS INFORMÁTICAS'}
-              </p>
-              <div className="flex flex-wrap items-center gap-2">
-                {currentSchedule.academic_period && (
-                  <div className="flex items-center gap-2 bg-primary-fixed text-on-primary-fixed-variant px-3 py-1 rounded-full text-[10px] md:text-xs font-semibold uppercase">
-                    <CalIcon size={11} />
-                    {currentSchedule.academic_period}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2 w-full lg:w-auto items-center">
-            {/* Zoom Controls for Mobile Header */}
-            <div className="flex md:hidden items-center gap-1 bg-surface-container rounded-lg p-1 mr-2">
+    <div className="pb-16 pt-6 sm:pt-10">
+      {/* Encabezado de la hoja: título editable y datos del período */}
+      <header className="flex flex-col gap-6">
+        <div className="min-w-0">
+          {isEditingTitle ? (
+            <input
+              type="text"
+              value={tempTitle}
+              maxLength={120}
+              aria-label="Nombre del horario"
+              onChange={(e) => setTempTitle(e.target.value)}
+              className="w-full max-w-xl border-b-2 border-primary bg-transparent text-3xl font-extrabold tracking-[-0.03em] text-on-surface outline-none sm:text-4xl"
+              autoFocus
+              onBlur={saveTitle}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveTitle();
+                if (e.key === 'Escape') {
+                  setTempTitle(currentSchedule.title);
+                  setIsEditingTitle(false);
+                }
+              }}
+            />
+          ) : (
+            <h1 className="flex items-start gap-2 text-3xl font-extrabold tracking-[-0.03em] text-on-surface sm:text-4xl">
+              <span className="min-w-0 break-words">{currentSchedule.title}</span>
               <button
-                onClick={handleZoomOut}
-                className="p-1.5 hover:bg-surface-container-high rounded text-on-surface-variant"
-                title="Disminuir letra"
+                type="button"
+                onClick={startEditingTitle}
+                className="mt-1 shrink-0 rounded-md p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary"
+                aria-label="Cambiar el nombre del horario"
               >
-                <ZoomOut size={16} />
+                <PenTool size={18} />
               </button>
-              <span className="text-xs font-medium w-10 text-center text-on-surface">
-                {Math.round(fontScale * 100)}%
+            </h1>
+          )}
+          <p className="mt-2 text-base text-on-surface-variant">
+            {[currentSchedule.faculty, currentSchedule.academic_period].filter(Boolean).map((v) => toDisplayCase(v!)).join(' · ') ||
+              'Período no especificado'}
+          </p>
+          <p className="mt-1 text-sm font-semibold text-on-surface-variant">
+            {subjectCount} {subjectCount === 1 ? 'materia' : 'materias'}
+            {conflictCount > 0 && (
+              <span className="ml-2 inline-flex items-center gap-1 font-bold text-error">
+                <AlertTriangle size={14} strokeWidth={2.5} />
+                {conflictCount} {conflictCount === 1 ? 'clase en choque' : 'clases en choque'}
               </span>
-              <button
-                onClick={handleZoomIn}
-                className="p-1.5 hover:bg-surface-container-high rounded text-on-surface-variant"
-                title="Aumentar letra"
-              >
-                <ZoomIn size={16} />
-              </button>
-            </div>
-            <button
-              onClick={() => setResetModalOpen(true)}
-              className="flex-1 lg:flex-none justify-center px-4 py-2 bg-surface-container text-on-surface rounded-lg text-sm font-semibold hover:bg-surface-container-high flex items-center gap-2 transition-colors"
-              title="Nuevo horario"
-            >
-              <RefreshCw size={16} /> Nuevo
-            </button>
-            <button
-              onClick={() => setCustomizerOpen(true)}
-              className="flex-1 lg:flex-none justify-center px-4 py-2 bg-surface-container text-on-surface rounded-lg text-sm font-semibold hover:bg-surface-container-high flex items-center gap-2 transition-colors"
-            >
-              <Palette size={16} /> Personalizar
-            </button>
-            <div className="relative z-50">
-              <button
-                onClick={() => setActionsMenuOpen(!actionsMenuOpen)}
-                className="flex-1 lg:flex-none justify-center px-4 py-2 bg-secondary-container text-on-secondary-container rounded-lg text-sm font-bold flex items-center gap-2 shadow-editorial hover:scale-[1.02] transition-transform duration-200"
-              >
-                <Download size={16} /> Exportar
-                <ChevronDown
-                  size={14}
-                  className={`transition-transform duration-200 ${actionsMenuOpen ? 'rotate-180' : ''}`}
-                />
-              </button>
-              {actionsMenuOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setActionsMenuOpen(false)}
-                  />
-                  <div className="absolute right-0 mt-2 w-56 bg-surface-container-lowest rounded-xl editorial-shadow-lg z-20 overflow-hidden text-left">
-                    <button
-                      onClick={() => {
-                        setActionsMenuOpen(false);
-                        handleDownload();
-                      }}
-                      disabled={isExporting}
-                      className="w-full text-left px-4 py-3 hover:bg-surface-container text-sm text-on-surface font-medium flex items-center gap-3 border-b border-outline-variant/15"
-                    >
-                      <div className="w-8 h-8 bg-error-container text-error rounded-lg flex items-center justify-center">
-                        {isExporting ? (
-                          <RefreshCw size={16} className="animate-spin" />
-                        ) : (
-                          <FileText size={16} />
-                        )}
-                      </div>
-                      <div className="flex flex-col">
-                        <span>Documento PDF</span>
-                        <span className="text-[10px] text-on-surface-variant">
-                          Descargar Alta Calidad
-                        </span>
-                      </div>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActionsMenuOpen(false);
-                        setCalendarModalOpen(true);
-                      }}
-                      className="w-full text-left px-4 py-3 hover:bg-surface-container text-sm text-on-surface font-medium flex items-center gap-3"
-                    >
-                      <div className="w-8 h-8 bg-primary-fixed text-on-primary-fixed-variant rounded-lg flex items-center justify-center">
-                        <CalIcon size={16} />
-                      </div>
-                      <div className="flex flex-col">
-                        <span>Archivo de Calendario</span>
-                        <span className="text-[10px] text-on-surface-variant">
-                          Sincronización / Descarga (.ics)
-                        </span>
-                      </div>
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+            )}
+          </p>
         </div>
-      </div>
 
-      {/* Grid / List Container */}
-      <div
-        id="schedule-export-container"
-        className="p-2 md:p-4 rounded-xl bg-surface-container-low editorial-shadow"
-      >
-        <div className="flex flex-row gap-4 items-start">
-          {/* Zoom controls for Desktop */}
-          <div className="hidden md:flex flex-col items-center gap-2 py-3 px-2 rounded-full editorial-shadow bg-surface-container-lowest text-on-surface-variant sticky top-28 z-10 shrink-0">
-            <button
-              onClick={handleZoomIn}
-              className="p-2 rounded-full hover:bg-surface-container transition-colors text-primary"
-              title="Aumentar"
-            >
-              <ZoomIn size={20} />
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center rounded-md border border-outline-variant bg-surface-container-lowest" role="group" aria-label="Tamaño de letra">
+            <button type="button" onClick={handleZoomOut} className="rounded-l-md p-2.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface" aria-label="Letra más pequeña">
+              <ZoomOut size={18} />
             </button>
-            <div className="h-px w-4 bg-outline-variant" />
-            <span className="text-[10px] font-bold select-none text-on-surface">
-              {Math.round(fontScale * 100)}%
-            </span>
-            <div className="h-px w-4 bg-outline-variant" />
-            <button
-              onClick={handleZoomOut}
-              className="p-2 rounded-full hover:bg-surface-container transition-colors text-primary"
-              title="Disminuir"
-            >
-              <ZoomOut size={20} />
+            <span className="tabular w-12 text-center text-xs font-bold text-on-surface">{Math.round(fontScale * 100)}%</span>
+            <button type="button" onClick={handleZoomIn} className="rounded-r-md p-2.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface" aria-label="Letra más grande">
+              <ZoomIn size={18} />
             </button>
           </div>
-
-          {/* Schedule rendering */}
-          <div className="flex-grow w-full">
-            {isMobile ? (
-              <ScheduleList
-                schedule={currentSchedule}
-                onResolveConflict={handleRemoveSession}
-              />
-            ) : (
-              <ScheduleGrid
-                schedule={currentSchedule}
-                onResolveConflict={handleRemoveSession}
-                theme={theme}
-                fontScale={fontScale}
-              />
+          <button
+            type="button"
+            onClick={() => setCustomizerOpen(true)}
+            className="inline-flex items-center gap-2 rounded-md border border-outline-variant bg-surface-container-lowest px-4 py-2.5 text-sm font-bold text-on-surface transition-colors hover:border-primary hover:text-primary"
+          >
+            <Palette size={17} /> Colores
+          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setActionsMenuOpen(!actionsMenuOpen)}
+              aria-expanded={actionsMenuOpen}
+              aria-haspopup="menu"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-bold text-on-primary shadow-editorial transition-colors hover:bg-primary-container"
+            >
+              <Download size={17} /> Exportar
+              <ChevronDown size={15} className={`transition-transform duration-200 ${actionsMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {actionsMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setActionsMenuOpen(false)} />
+                <div role="menu" className="paper-grid absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded shadow-editorial-lg">
+                  <button
+                    role="menuitem"
+                    type="button"
+                    onClick={() => {
+                      setActionsMenuOpen(false);
+                      setCalendarModalOpen(true);
+                    }}
+                    className="flex w-full items-start gap-3 bg-surface-container-lowest/90 px-4 py-3 text-left hover:bg-surface-container"
+                  >
+                    <CalIcon size={18} className="mt-0.5 text-primary" />
+                    <span>
+                      <span className="block text-sm font-bold text-on-surface">A mi calendario</span>
+                      <span className="block text-xs text-on-surface-variant">Archivo .ics o Google Calendar</span>
+                    </span>
+                  </button>
+                  <button
+                    role="menuitem"
+                    type="button"
+                    onClick={() => {
+                      setActionsMenuOpen(false);
+                      handleDownload();
+                    }}
+                    disabled={isExporting}
+                    className="flex w-full items-start gap-3 border-t border-outline-variant bg-surface-container-lowest/90 px-4 py-3 text-left hover:bg-surface-container disabled:opacity-60"
+                  >
+                    {isExporting ? <RefreshCw size={18} className="mt-0.5 animate-spin text-primary" /> : <FileText size={18} className="mt-0.5 text-primary" />}
+                    <span>
+                      <span className="block text-sm font-bold text-on-surface">PDF para imprimir</span>
+                      <span className="block text-xs text-on-surface-variant">Hoja A3 horizontal</span>
+                    </span>
+                  </button>
+                </div>
+              </>
             )}
           </div>
+          <button
+            type="button"
+            onClick={() => setResetModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-md px-3 py-2.5 text-sm font-bold text-on-surface-variant transition-colors hover:text-primary"
+          >
+            <RefreshCw size={16} /> Nuevo
+          </button>
         </div>
+      </header>
+
+      <div className="mt-8 sm:mt-10">
+        {isMobile ? (
+          <ScheduleList schedule={currentSchedule} onResolveConflict={handleRemoveSession} fontScale={fontScale} />
+        ) : (
+          <ScheduleGrid schedule={currentSchedule} onResolveConflict={handleRemoveSession} fontScale={fontScale} />
+        )}
       </div>
 
-      {/* Modals and Sidebars */}
       <ConfirmResetModal
         isOpen={resetModalOpen}
         onClose={() => setResetModalOpen(false)}

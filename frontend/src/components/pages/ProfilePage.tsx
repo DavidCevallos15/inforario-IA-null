@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../../types';
 import { supabase } from '../../services/supabase/supabaseClient';
-import { User, LogOut, Save, Camera } from 'lucide-react';
+import { ArrowLeft, Check, User, LogOut, Save } from 'lucide-react';
 
 interface ProfilePageProps {
   onBack: () => void;
@@ -91,101 +91,87 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onLogout }) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="mx-auto max-w-xl space-y-4 py-14" role="status" aria-label="Cargando perfil">
+        <div className="h-16 w-16 animate-pulse rounded-xl bg-pencil/20" />
+        <div className="h-8 w-48 animate-pulse rounded bg-pencil/20" />
+        <div className="h-12 w-full animate-pulse rounded bg-pencil/15" />
       </div>
     );
   }
 
+  const initial = (fullName.charAt(0) || profile?.email?.charAt(0) || '?').toUpperCase();
+
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4 relative z-10">
-      <div className="flex items-center gap-4 mb-8">
-        <button onClick={onBack} className="text-on-surface-variant hover:text-primary font-medium text-sm transition-colors">
-          ← Volver
-        </button>
-        <h1 className="text-3xl font-bold text-on-surface">Mi Perfil</h1>
-      </div>
+    <div className="mx-auto w-full max-w-xl pb-20 pt-8 sm:pt-14">
+      <button
+        type="button"
+        onClick={onBack}
+        className="mb-8 inline-flex items-center gap-1.5 text-sm font-bold text-on-surface-variant transition-colors hover:text-primary"
+      >
+        <ArrowLeft size={16} /> Volver
+      </button>
 
-      <div className="bg-surface-container-lowest rounded-[2rem] p-8 editorial-shadow border border-outline-variant/15">
-        <div className="flex flex-col md:flex-row gap-8 items-start">
-          
-          {/* Avatar Section */}
-          <div className="flex flex-col items-center gap-4 w-full md:w-auto">
-            <div className="relative w-32 h-32 bg-primary-container rounded-full flex items-center justify-center text-on-primary-container group overflow-hidden">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-5xl font-bold uppercase">{fullName.charAt(0) || profile?.email?.charAt(0)}</span>
-              )}
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                <Camera size={24} className="text-white" />
-              </div>
-            </div>
-            <p className="text-xs text-on-surface-variant text-center max-w-[150px]">
-              La subida de avatares está en desarrollo
-            </p>
-          </div>
-
-          {/* Form Section */}
-          <form onSubmit={handleSave} className="flex-grow w-full space-y-6">
-            
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-on-surface">Correo Electrónico (Solo Lectura)</label>
-              <input 
-                type="text" 
-                disabled 
-                value={profile?.email || ''} 
-                className="w-full px-4 py-3 bg-surface-container rounded-xl text-on-surface-variant border border-outline-variant/15 cursor-not-allowed"
-              />
-              <p className="text-xs text-on-surface-variant">El correo está vinculado a la cuenta institucional de UTM.</p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-on-surface">Nombre Completo</label>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-outline" size={18} />
-                <input 
-                  type="text" 
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-surface-container-lowest border border-outline-variant/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface"
-                  placeholder="Tu nombre completo"
-                />
-              </div>
-              <p className="text-xs text-on-surface-variant">Este nombre aparecerá en los horarios que descargues.</p>
-            </div>
-
-            {success && (
-              <div className="p-3 bg-primary-fixed text-on-primary-fixed-variant rounded-xl text-sm font-medium">
-                Perfil actualizado exitosamente.
-              </div>
-            )}
-
-            <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-outline-variant/15">
-              <button 
-                type="submit" 
-                disabled={saving}
-                className="flex-1 bg-primary text-on-primary py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-primary-container transition-all shadow-editorial hover:shadow-editorial-lg disabled:opacity-70"
-              >
-                {saving ? (
-                   <div className="w-5 h-5 border-2 border-on-primary/30 border-t-on-primary rounded-full animate-spin"></div>
-                ) : (
-                  <><Save size={18} /> Guardar Cambios</>
-                )}
-              </button>
-              
-              <button 
-                type="button" 
-                onClick={handleSignOut}
-                className="flex-1 bg-error-container text-error py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-200 transition-all"
-              >
-                <LogOut size={18} /> Cerrar Sesión
-              </button>
-            </div>
-            
-          </form>
+      <div className="flex items-center gap-4">
+        {profile?.avatar_url ? (
+          <img src={profile.avatar_url} alt="" className="h-16 w-16 rounded-xl object-cover" />
+        ) : (
+          <span aria-hidden className="ink grid h-16 w-16 place-items-center rounded-xl bg-hl-yellow text-3xl font-bold text-[#14213d]">
+            {initial}
+          </span>
+        )}
+        <div className="min-w-0">
+          <h1 className="text-3xl font-extrabold tracking-[-0.03em] text-on-surface">Tu perfil</h1>
+          <p className="truncate text-base text-on-surface-variant">{profile?.email}</p>
         </div>
       </div>
+
+      <form onSubmit={handleSave} className="mt-10 space-y-6">
+        <div className="space-y-2">
+          <label htmlFor="profile-name" className="block text-sm font-bold text-on-surface">
+            Nombre completo
+          </label>
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" size={18} />
+            <input
+              id="profile-name"
+              type="text"
+              autoComplete="name"
+              value={fullName}
+              onChange={(e) => {
+                setFullName(e.target.value);
+                setSuccess(false);
+              }}
+              className="w-full rounded-md border border-outline bg-surface-container-lowest py-3 pl-10 pr-4 text-base text-on-surface transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+              placeholder="Tus nombres y apellidos"
+            />
+          </div>
+          <p className="text-sm text-on-surface-variant">Aparece en el encabezado del PDF que exportes.</p>
+        </div>
+
+        {success && (
+          <p role="status" className="flex items-center gap-2 rounded bg-primary-fixed px-3 py-2.5 text-sm font-semibold text-on-primary-fixed">
+            <Check size={18} /> Cambios guardados.
+          </p>
+        )}
+
+        <div className="flex flex-col gap-3 border-t border-outline-variant pt-6 sm:flex-row">
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex flex-1 items-center justify-center gap-2 rounded-md bg-primary py-3 text-base font-bold text-on-primary shadow-editorial transition-colors hover:bg-primary-container disabled:opacity-60"
+          >
+            {saving ? <span className="h-5 w-5 animate-spin rounded-full border-2 border-on-primary/30 border-t-on-primary" /> : <Save size={18} />}
+            Guardar cambios
+          </button>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="flex flex-1 items-center justify-center gap-2 rounded-md border border-outline-variant py-3 text-base font-bold text-on-surface transition-colors hover:border-error hover:text-error"
+          >
+            <LogOut size={18} /> Cerrar sesión
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

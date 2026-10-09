@@ -60,7 +60,7 @@ export const useScheduleUpload = ({ deviceId, onSuccess }: UseScheduleUploadProp
       }
 
       const newSchedule: Schedule = {
-        title: 'Mi Horario Académico',
+        title: 'Mi horario',
         sessions: resolveConflicts(assignSubjectColors(parsed.sessions)),
         lastUpdated: new Date(),
         academic_period: parsed.academic_period,

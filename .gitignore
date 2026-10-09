@@ -27,3 +27,8 @@ dist-ssr
 
 # IDE Agent Skills
 .agents/
+
+# Impeccable: artefactos locales de revisión
+.impeccable/review/
+.impeccable/questions/
+.impeccable/decision-payload.json

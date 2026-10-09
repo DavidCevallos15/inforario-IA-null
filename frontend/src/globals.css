@@ -1,146 +1,316 @@
-/* Global styles — Inforario v3.0 "The Academic Curator" */
+/* Inforario: la hoja de cuaderno cuadriculado */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --color-background:              #fbf9f8;
-  --color-surface:                 #fbf9f8;
-  --color-surface-bright:          #fbf9f8;
-  --color-surface-dim:             #dcd9d9;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low:   #f6f3f2;
-  --color-surface-container:       #f0eded;
-  --color-surface-container-high:  #eae8e7;
-  --color-surface-container-highest: #e4e2e1;
-  --color-surface-variant:         #e4e2e1;
+@layer base {
+  /* ---------- Hoja blanca (día, al sol) ---------- */
+  :root {
+    color-scheme: light;
 
-  --color-primary:                 #004925;
-  --color-primary-container:       #006334;
-  --color-primary-fixed:           #a1f5b8;
-  --color-primary-fixed-dim:       #86d89d;
-  --color-inverse-primary:         #86d89d;
+    --c-background: 248 250 253;
+    --c-surface: 248 250 253;
+    --c-surface-bright: 255 255 255;
+    --c-surface-dim: 221 229 240;
+    --c-surface-container-lowest: 255 255 255;
+    --c-surface-container-low: 241 245 251;
+    --c-surface-container: 233 239 247;
+    --c-surface-container-high: 223 231 242;
+    --c-surface-container-highest: 213 224 238;
+    --c-surface-variant: 223 231 242;
 
-  --color-secondary:               #7c5800;
-  --color-secondary-container:     #fcb812;
-  --color-secondary-fixed:         #ffdea7;
-  --color-secondary-fixed-dim:     #ffbb1e;
+    /* Tinta azul de esfero: estructura, títulos y acciones */
+    --c-primary: 29 63 168;
+    --c-primary-container: 44 82 199;
+    --c-primary-fixed: 223 231 253;
+    --c-primary-fixed-dim: 183 199 246;
+    --c-inverse-primary: 183 199 246;
+    --c-on-primary: 255 255 255;
+    --c-on-primary-container: 255 255 255;
+    --c-on-primary-fixed: 14 31 87;
+    --c-on-primary-fixed-variant: 29 63 168;
 
-  --color-on-surface:              #1b1c1c;
-  --color-on-surface-variant:      #3f4940;
-  --color-on-primary:              #ffffff;
-  --color-on-primary-container:    #8adda1;
-  --color-on-primary-fixed:        #00210e;
-  --color-on-primary-fixed-variant: #00522a;
-  --color-on-secondary:            #ffffff;
-  --color-on-secondary-container:  #6a4b00;
-  --color-on-secondary-fixed:      #271900;
-  --color-on-secondary-fixed-variant: #5e4200;
+    /* Lápiz grafito: lo secundario */
+    --c-secondary: 74 84 104;
+    --c-secondary-container: 228 233 242;
+    --c-secondary-fixed: 233 237 244;
+    --c-secondary-fixed-dim: 207 215 228;
+    --c-on-secondary: 255 255 255;
+    --c-on-secondary-container: 20 33 61;
+    --c-on-secondary-fixed: 27 35 51;
+    --c-on-secondary-fixed-variant: 58 68 88;
 
-  --color-tertiary:                #393f43;
-  --color-tertiary-container:      #50565b;
-  --color-tertiary-fixed:          #dee3e8;
-  --color-tertiary-fixed-dim:      #c1c7cc;
-  --color-on-tertiary:             #ffffff;
-  --color-on-tertiary-container:   #c5cbd0;
-  --color-on-tertiary-fixed:       #161c20;
+    --c-tertiary: 60 74 99;
+    --c-tertiary-container: 82 96 122;
+    --c-tertiary-fixed: 222 228 238;
+    --c-tertiary-fixed-dim: 192 201 216;
+    --c-on-tertiary: 255 255 255;
+    --c-on-tertiary-container: 226 232 242;
+    --c-on-tertiary-fixed: 20 28 42;
+    --c-on-tertiary-fixed-variant: 62 72 92;
 
-  --color-outline:                 #6f7a70;
-  --color-outline-variant:         #bfc9be;
-  --color-error:                   #ba1a1a;
-  --color-error-container:         #ffdad6;
-  --color-on-error:                #ffffff;
-  --color-on-error-container:      #93000a;
-  --color-inverse-surface:         #303030;
-  --color-inverse-on-surface:      #f3f0f0;
+    /* Texto: tinta casi negra, nunca negro puro */
+    --c-on-surface: 20 33 61;
+    --c-on-surface-variant: 72 86 111;
+    --c-outline: 128 147 176;
+    --c-outline-variant: 205 220 238;
 
-  /* Sombras tintadas UTM */
-  --shadow-editorial:    0 20px 40px rgba(0, 73, 37, 0.06);
-  --shadow-editorial-lg: 0 24px 48px rgba(0, 73, 37, 0.12);
-}
+    /* Rojo de margen: solo choques y errores */
+    --c-error: 196 32 54;
+    --c-error-container: 253 228 231;
+    --c-on-error: 255 255 255;
+    --c-on-error-container: 140 18 34;
 
-body {
-  margin: 0;
-  padding: 0;
-  background-color: #fbf9f8;
-  color: #1b1c1c;
-  font-family: 'Inter', sans-serif;
-}
+    --c-inverse-surface: 28 36 51;
+    --c-inverse-on-surface: 238 242 248;
+    --c-surface-tint: 29 63 168;
 
-/* Scrollbar personalizada — tono verde UTM */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #f0eded;
-}
-::-webkit-scrollbar-thumb {
-  background: #bfc9be;
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #004925;
-}
+    --c-grid: 205 220 238;
+    --c-margin: 239 107 123;
+    --c-pencil: 120 132 152;
+    --c-shadow: 20 33 61;
 
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* Sombras editoriales */
-.editorial-shadow {
-  box-shadow: var(--shadow-editorial);
-}
-.editorial-shadow-lg {
-  box-shadow: var(--shadow-editorial-lg);
-}
-
-/* Animación pulse verde UTM (dorado como acento) */
-@keyframes pulse-utm {
-  0%, 100% {
-    opacity: 1;
-    box-shadow: 0 0 0 0 rgba(252, 184, 18, 0.4);
+    --grid-size: 24px;
   }
-  50% {
-    opacity: 0.8;
-    box-shadow: 0 0 0 6px rgba(252, 184, 18, 0);
+
+  /* ---------- Hoja de pizarra (noche, en el cuarto) ---------- */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+
+      --c-background: 17 22 31;
+      --c-surface: 17 22 31;
+      --c-surface-bright: 33 41 56;
+      --c-surface-dim: 13 17 24;
+      --c-surface-container-lowest: 22 28 39;
+      --c-surface-container-low: 27 34 48;
+      --c-surface-container: 33 42 58;
+      --c-surface-container-high: 40 50 68;
+      --c-surface-container-highest: 47 58 78;
+      --c-surface-variant: 40 50 68;
+
+      --c-primary: 150 176 255;
+      --c-primary-container: 51 84 196;
+      --c-primary-fixed: 31 44 85;
+      --c-primary-fixed-dim: 61 79 134;
+      --c-inverse-primary: 29 63 168;
+      --c-on-primary: 11 22 64;
+      --c-on-primary-container: 255 255 255;
+      --c-on-primary-fixed: 223 231 253;
+      --c-on-primary-fixed-variant: 185 201 255;
+
+      --c-secondary: 180 191 210;
+      --c-secondary-container: 40 50 68;
+      --c-secondary-fixed: 40 50 68;
+      --c-secondary-fixed-dim: 61 72 92;
+      --c-on-secondary: 17 22 31;
+      --c-on-secondary-container: 232 237 246;
+      --c-on-secondary-fixed: 232 237 246;
+      --c-on-secondary-fixed-variant: 190 200 218;
+
+      --c-tertiary: 190 200 218;
+      --c-tertiary-container: 61 72 92;
+      --c-tertiary-fixed: 40 50 68;
+      --c-tertiary-fixed-dim: 61 72 92;
+      --c-on-tertiary: 17 22 31;
+      --c-on-tertiary-container: 226 232 242;
+      --c-on-tertiary-fixed: 232 237 246;
+      --c-on-tertiary-fixed-variant: 190 200 218;
+
+      --c-on-surface: 232 237 246;
+      --c-on-surface-variant: 169 180 200;
+      --c-outline: 105 120 146;
+      --c-outline-variant: 44 54 72;
+
+      --c-error: 255 115 131;
+      --c-error-container: 74 27 36;
+      --c-on-error: 43 9 16;
+      --c-on-error-container: 255 213 218;
+
+      --c-inverse-surface: 232 237 246;
+      --c-inverse-on-surface: 20 33 61;
+      --c-surface-tint: 150 176 255;
+
+      --c-grid: 37 47 64;
+      --c-margin: 185 71 90;
+      --c-pencil: 128 140 162;
+      --c-shadow: 0 0 0;
+    }
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background-color: rgb(var(--c-background));
+    color: rgb(var(--c-on-surface));
+    font-family: 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    caret-color: rgb(var(--c-primary));
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Horas, aulas y pisos: números tabulares para que las columnas alineen */
+  time,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: #f6e84b;
+    color: #14213d;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--c-primary));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  a {
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--c-surface-container-low));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--c-outline) / 0.55);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--c-primary));
+  }
+  * {
+    scrollbar-color: rgb(var(--c-outline) / 0.55) rgb(var(--c-surface-container-low));
   }
 }
-.animate-pulse-utm {
-  animation: pulse-utm 3s ease-in-out infinite;
-}
 
-/* Tipos tipográficos editorial */
-.display-lg {
-  font-size: 3.5rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-.headline-md {
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-.title-lg {
-  font-size: 1.375rem;
-  font-weight: 600;
-  letter-spacing: 0;
-}
-.body-lg {
-  font-size: 1rem;
-  font-weight: 400;
-  letter-spacing: 0.01em;
-}
-.label-md {
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
+@layer components {
+  /* La hoja cuadriculada: cuadros de 24 px */
+  .paper-grid {
+    background-color: rgb(var(--c-surface-container-lowest));
+    background-image:
+      linear-gradient(rgb(var(--c-grid)) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--c-grid)) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
+    background-position: -1px -1px;
+  }
 
-/* Selection brand color */
-::selection {
-  background: rgba(161, 245, 184, 0.4);
-  color: #004925;
+  /* Variante tenue para fondos amplios donde el texto debe dominar */
+  .paper-grid-soft {
+    background-color: rgb(var(--c-background));
+    background-image:
+      linear-gradient(rgb(var(--c-grid) / 0.6) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--c-grid) / 0.6) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
+    background-position: -1px -1px;
+  }
+
+  /* Margen rojo del cuaderno */
+  .margin-rule {
+    position: relative;
+  }
+  .margin-rule::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--margin-x, 20px);
+    width: 2px;
+    background: rgb(var(--c-margin) / 0.7);
+    pointer-events: none;
+  }
+
+  /* Trazo de resaltador: fondo irregular bajo el texto, no un rectángulo perfecto */
+  .highlight {
+    background-image: linear-gradient(
+      100deg,
+      transparent 0.4em,
+      var(--hl, #f6e84b) 0.5em,
+      var(--hl, #f6e84b) calc(100% - 0.4em),
+      transparent calc(100% - 0.3em)
+    );
+    background-size: 100% 62%;
+    background-position: 0 72%;
+    background-repeat: no-repeat;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    padding: 0 0.15em;
+    /* Sobre resaltador la tinta siempre es oscura, también en la hoja de pizarra */
+    color: #14213d;
+  }
+  /* En la pizarra el trazo cubre toda la letra: si no, la tinta oscura se perdería sobre el fondo */
+  @media (prefers-color-scheme: dark) {
+    .highlight {
+      /* Trazo recto y completo: los extremos en diagonal dejaban letras sobre el fondo oscuro */
+      /* Cubre la letra entera, pero los extremos van en diagonal sobre el relleno lateral,
+         sin tocar las letras: se lee como trazo de marcador y no como etiqueta */
+      background-image: linear-gradient(
+        104deg,
+        transparent 0.1em,
+        var(--hl, #f6e84b) 0.34em,
+        var(--hl, #f6e84b) calc(100% - 0.3em),
+        transparent calc(100% - 0.06em)
+      );
+      background-size: 100% 100%;
+      background-position: 0 0;
+      border-radius: 0.12em 0.3em 0.16em 0.34em;
+      padding: 0 0.36em 0 0.3em;
+    }
+  }
+
+  /* Letra de esfero para acentos de tinta */
+  .ink {
+    font-family: 'Kalam', cursive;
+    color: rgb(var(--c-primary));
+  }
+
+  /* Borde a lápiz punteado: lo que no está confirmado */
+  .pencil-dashed {
+    border: 1.5px dashed rgb(var(--c-pencil) / 0.8);
+  }
+
+  .editorial-shadow {
+    box-shadow: 0 1px 0 rgb(var(--c-shadow) / 0.06), 0 10px 24px -14px rgb(var(--c-shadow) / 0.28);
+  }
+  .editorial-shadow-lg {
+    box-shadow: 0 2px 0 rgb(var(--c-shadow) / 0.06), 0 22px 40px -18px rgb(var(--c-shadow) / 0.34);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
