@@ -179,7 +179,8 @@ Deno.serve(async (req) => {
     }
 
     const groqApiKey = Deno.env.get('GROQ_API_KEY');
-    const groqModel = Deno.env.get('GROQ_MODEL') || 'llama-3.3-70b-versatile';
+    // llama-3.3-70b-versatile fue retirado por Groq el 2026-08-16; reemplazo oficial: gpt-oss-120b
+    const groqModel = Deno.env.get('GROQ_MODEL') || 'openai/gpt-oss-120b';
 
     if (!groqApiKey) {
       console.error('[ERROR] Falta GROQ_API_KEY');
@@ -204,6 +205,8 @@ Deno.serve(async (req) => {
           { role: 'user', content: `Extrae el horario del siguiente texto:\n${pdfText}` },
         ],
         temperature: 0.1,
+        // Extracción simple: poco razonamiento = respuesta más rápida (solo modelos que lo admiten)
+        ...(groqModel.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low' } : {}),
         response_format: { type: 'json_object' },
       }),
     });

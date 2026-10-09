@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ClassSession, Schedule } from '../../../types';
 import { extractScheduleWithAI, saveScheduleToDB } from '../../../services/supabase/supabaseClient';
 import { assignSubjectColors, parseSguTextItems, ParseResult, resolveConflicts } from '../utils/sguRegexParser';
-import { loadPdfTextItems, textItemsToPlainText } from '../utils/pdfText';
+import { loadPdfTextItems, redactPersonalData, textItemsToPlainText } from '../utils/pdfText';
 
 interface UseScheduleUploadProps {
   deviceId: string | null;
@@ -10,9 +10,10 @@ interface UseScheduleUploadProps {
 }
 
 /**
- * PDF: se extrae el texto una sola vez. La IA obtiene las sesiones (con el
- * parser local como respaldo) y los metadatos del encabezado (facultad,
- * período) siempre se leen localmente, porque la IA no los devuelve.
+ * PDF: primero el parser local (instantáneo, gratis y sin enviar datos a
+ * terceros). La IA solo se usa si el formato no se reconoce, y recibe el texto
+ * sin los datos personales del encabezado. Facultad y período siempre se leen
+ * localmente.
  */
 const parsePdfSchedule = async (file: File): Promise<ParseResult> => {
   const items = await loadPdfTextItems(await file.arrayBuffer());
@@ -24,12 +25,15 @@ const parsePdfSchedule = async (file: File): Promise<ParseResult> => {
     console.warn('El parser local falló.', localError);
   }
 
+  if (local && local.sessions.length > 0) {
+    return local;
+  }
+
   let sessions: ClassSession[] = [];
   try {
-    sessions = await extractScheduleWithAI(textItemsToPlainText(items));
+    sessions = await extractScheduleWithAI(textItemsToPlainText(redactPersonalData(items)));
   } catch (edgeError) {
-    console.warn('La extracción con Edge Function falló, usando parser local.', edgeError);
-    sessions = local?.sessions ?? [];
+    console.warn('La extracción con IA también falló.', edgeError);
   }
 
   return { ...local, sessions };

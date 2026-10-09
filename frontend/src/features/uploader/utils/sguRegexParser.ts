@@ -148,8 +148,7 @@ export function parseSguTextItems(allItems: TextItem[]): ParseResult {
   const metadata = extractMetadata(allItems);
   
   // 2. EXTRAER BLOQUES DE MATERIAS
-  const facultyName = metadata.faculty || 'Sin asignar';
-  let sessions = extractSubjectBlocks(allItems, facultyName);
+  let sessions = extractSubjectBlocks(allItems);
   
   // 3. RESOLVER CONFLICTOS U OVERLAPS (No destructivo)
   sessions = resolveConflicts(sessions);
@@ -174,88 +173,129 @@ export interface Metadata {
   level?: string;
 }
 
+/** Mayúsculas y sin tildes: el SGU imprime "Período:" y el SGA antiguo "PERIODO:". */
+const normalizeLabel = (text: string) =>
+  text.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+
+/** Y del encabezado de la tabla de materias en la página, si existe. */
+const findTableHeaderY = (pageItems: TextItem[]): number | undefined => {
+  const headers = pageItems.filter((i) => normalizeLabel(i.text) === 'ASIGNATURA');
+  return headers.length ? Math.min(...headers.map((h) => h.y)) : undefined;
+};
+
 export function extractMetadata(items: TextItem[]): Metadata {
   const result: Metadata = {};
-  
-  // Header items are in the top portion of page 1 (y < 210)
-  const headerItems = items.filter(i => (i.page === 1 || !i.page) && i.y < 210);
-  
-  // Build a map of key-value pairs from header
+
+  // El encabezado está en la página 1, por encima de la tabla de materias
+  const page1 = items.filter((i) => (i.page ?? 1) === 1);
+  const tableY = findTableHeaderY(page1) ?? 210;
+  const headerItems = page1.filter((i) => i.y < tableY);
+
   for (let idx = 0; idx < headerItems.length; idx++) {
-    const item = headerItems[idx];
-    const text = item.text.toUpperCase();
-    
-    if (text.includes('PERIODO:') || text === 'PERIODO:') {
-      const value = findValueAfterLabel(headerItems, idx);
-      if (value) result.academicPeriod = normalizeAcademicPeriod(value);
-    }
-    
-    if (text.includes('FACULTAD:') || text === 'FACULTAD:') {
-      const value = findValueAfterLabel(headerItems, idx);
-      if (value) result.faculty = value.toUpperCase();
-    }
-    
-    if (text.includes('ESCUELA:') || text === 'ESCUELA:') {
-      const value = findValueAfterLabel(headerItems, idx);
-      if (value) result.career = value.toUpperCase();
-    }
-    
-    if (text.includes('ESTUDIANTE:') || text === 'ESTUDIANTE:') {
-      const value = findValueAfterLabel(headerItems, idx);
-      if (value) result.studentName = value;
-    }
-    
-    if (text.includes('NIVEL:') || text === 'NIVEL:') {
-      const value = findValueAfterLabel(headerItems, idx);
-      if (value) result.level = value;
+    const label = normalizeLabel(headerItems[idx].text);
+    if (!label.endsWith(':')) continue;
+    const value = findValueAfterLabel(headerItems, idx);
+    if (!value) continue;
+
+    switch (label) {
+      case 'PERIODO:':
+        result.academicPeriod = normalizeAcademicPeriod(value);
+        break;
+      case 'FACULTAD:': {
+        const faculty = value.toUpperCase();
+        result.faculty = faculty.startsWith('FACULTAD') ? faculty : `FACULTAD DE ${faculty}`;
+        break;
+      }
+      case 'CARRERA:':
+      case 'ESCUELA:':
+        result.career = value.toUpperCase();
+        break;
+      case 'ESTUDIANTE:':
+        result.studentName = value;
+        break;
+      case 'NIVEL:':
+        result.level = value;
+        break;
     }
   }
-  
+
   return result;
 }
 
 function findValueAfterLabel(items: TextItem[], labelIdx: number): string | null {
   const label = items[labelIdx];
-  for (let i = labelIdx + 1; i < items.length; i++) {
-    const candidate = items[i];
-    if (Math.abs(candidate.y - label.y) <= 5 && candidate.x > label.x) {
-      return candidate.text;
-    }
-  }
-  return null;
+  const candidates = items
+    .filter((c) => c !== label && Math.abs(c.y - label.y) <= 5 && c.x > label.x)
+    .sort((a, b) => a.x - b.x);
+  return candidates[0]?.text ?? null;
+}
+
+const LOWERCASE_WORDS = new Set(['DE', 'DEL', 'LA', 'LAS', 'LOS', 'Y', 'E', 'EN']);
+
+const toTitleCase = (text: string) =>
+  text
+    .toUpperCase()
+    .split(/\s+/)
+    .map((word, i) =>
+      i > 0 && LOWERCASE_WORDS.has(word)
+        ? word.toLowerCase()
+        : word.replace(/[A-ZÁÉÍÓÚÜÑ]+/g, (w) => w.charAt(0) + w.slice(1).toLowerCase())
+    )
+    .join(' ');
+
+/**
+ * Edificio a partir del campo LUGAR, p. ej.
+ * "FACULTAD DE CIENCIAS BÁSICAS I (CIENCIAS BÁSICAS)" → "Ciencias Básicas I".
+ */
+export function extractBuilding(lugar: string): string | undefined {
+  const clean = lugar
+    .replace(/\s+/g, ' ')
+    .replace(/\s*\([^)]*\)\s*$/, '')
+    .replace(/^FACULTAD DE\s+/i, '')
+    .trim();
+  return clean ? toTitleCase(clean) : undefined;
 }
 
 // ------------------------------------------------------------------
 // EXTRACT SUBJECT BLOCKS
 // ------------------------------------------------------------------
-function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[] {
+// Columnas del reporte SGU (página horizontal de 792 pt). Medidas sobre un reporte real:
+// ASIGNATURA x≈26 · NIVEL 229 · PARAL. 263 · CREDI. 305 · DOCENTE 330 · DEPARTAMENTO 441 · HORARIO 538–566+
+const COL = {
+  SUBJECT_MAX_X: 200,
+  DOCENTE_MIN_X: 320,
+  DOCENTE_MAX_X: 430,
+  HORARIO_MIN_X: 495,
+};
+
+// Textos que marcan el fin de la tabla (leyenda y pie de página)
+const TABLE_END_MARKERS = ['LEYENDAS', 'LEYENDA', 'APROBADO', 'PENDIENTE', 'NOTA', 'SISTEMA DE GESTION'];
+
+function extractSubjectBlocks(items: TextItem[]): ClassSession[] {
   const sessions: ClassSession[] = [];
   const subjectColors = new Map<string, string>();
-  
-  const COL = {
-    SUBJECT_MAX_X: 170,
-    DOCENTE_MIN_X: 260,
-    DOCENTE_MAX_X: 415,
-    HORARIO_MIN_X: 495,
-  };
-  
+
   const pages = Array.from(new Set(items.map(i => i.page || 1))).sort((a, b) => a - b);
-  
+
   for (const pageNum of pages) {
     const pageItems = items.filter(i => (i.page || 1) === pageNum);
-    
-    const asignaturaHeaders = pageItems.filter(i => i.text === 'ASIGNATURA');
-    const dataStartY = asignaturaHeaders.length > 0 
-      ? Math.min(...asignaturaHeaders.map(h => h.y)) + 15 
-      : 230;
-    
+
+    // Las páginas de continuación no repiten el encabezado: la tabla empieza arriba
+    const tableHeaderY = findTableHeaderY(pageItems);
+    const dataStartY = tableHeaderY !== undefined ? tableHeaderY + 15 : 0;
+    const endMarkers = pageItems.filter(
+      (i) => i.y >= dataStartY && TABLE_END_MARKERS.some((m) => normalizeLabel(i.text).startsWith(m))
+    );
+    const dataEndY = endMarkers.length ? Math.min(...endMarkers.map((m) => m.y)) : Infinity;
+    const inTable = (i: TextItem) => i.y >= dataStartY && i.y < dataEndY;
+
     const headerTexts = ['ASIGNATURA', 'NIVEL', 'PARAL.', 'CREDI.', 'DOCENTE', 'DEPARTAMENTO', 'HORARIO Y AMBIENTE'];
     const footerTexts = ['LEYENDAS', 'DESCRIPCION', 'LEYENDA', 'DESCRIPCIÓN', 'Sistema de Gestión', 'APROBADO', 'PENDIENTE', 'PARALELO QUE', 'AQUELLOS PARALELOS'];
-    
+
     // 1. Identify subjects on this page
-    const subjectItems = pageItems.filter(i => 
-      i.y >= dataStartY && 
-      i.x < COL.SUBJECT_MAX_X && 
+    const subjectItems = pageItems.filter(i =>
+      inTable(i) &&
+      i.x < COL.SUBJECT_MAX_X &&
       !headerTexts.includes(i.text) && 
       !footerTexts.some(ft => i.text.includes(ft)) &&
       !i.text.startsWith('NOTA:') &&
@@ -301,8 +341,8 @@ function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[
     if (subjects.length === 0) continue;
     
     // 2. Identify docente name items for each subject
-    const docenteItems = pageItems.filter(i => 
-      i.y >= dataStartY && 
+    const docenteItems = pageItems.filter(i =>
+      inTable(i) &&
       i.x >= COL.DOCENTE_MIN_X && i.x < COL.DOCENTE_MAX_X &&
       !headerTexts.includes(i.text) && 
       !footerTexts.some(ft => i.text.includes(ft))
@@ -325,15 +365,15 @@ function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[
     
     for (const sub of subjects) {
       const rawTeacher = sub.docenteItems
-        .sort((a, b) => a.y - b.y)
+        .sort((a, b) => a.y - b.y || a.x - b.x)
         .map(i => i.text)
         .join(' ');
       sub.teacher = normalizeTeacherName(rawTeacher);
     }
     
     // 3. Identify schedule entry headers in the schedule column
-    const scheduleItems = pageItems.filter(i => 
-      i.y >= dataStartY && 
+    const scheduleItems = pageItems.filter(i =>
+      inTable(i) &&
       i.x >= COL.HORARIO_MIN_X &&
       !headerTexts.includes(i.text) && 
       !footerTexts.some(ft => i.text.includes(ft))
@@ -341,6 +381,7 @@ function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[
     
     const dayTimeRegex = /(?:-\s*)?\b(LUNES|MARTES|MI[EÉ]RCOLES|JUEVES|VIERNES)\b\s*\((\d{1,2}):(\d{2}):\d{2}-(\d{1,2}):(\d{2}):\d{2}\)/i;
     const virtualRegex = /(?:MATERIA|ASIGNATURA)\s+VIRTUAL/i;
+    const unassignedRegex = /HORARIO\s+NO\s+ASIGNADO/i;
     
     interface EntryHeader {
       y: number;
@@ -355,6 +396,8 @@ function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[
     for (const item of scheduleItems) {
       const isDayTime = dayTimeRegex.test(item.text);
       const isVirtual = virtualRegex.test(item.text);
+      // "- HORARIO NO ASIGNADO.": cierra el bloque anterior; la materia se agrega luego sin horario
+      if (unassignedRegex.test(item.text)) continue;
       if (isDayTime || isVirtual) {
         entryHeaders.push({
           y: item.y,
@@ -385,55 +428,57 @@ function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[
       }
     }
     
+    const findClosestSubject = (y: number): TempSubject | null => {
+      let closest: TempSubject | null = null;
+      let minDistance = Infinity;
+      for (const sub of subjects) {
+        const dist = Math.abs(sub.y - y);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closest = sub;
+        }
+      }
+      return closest;
+    };
+
+    const subjectsWithSessions = new Set<TempSubject>();
+
     for (const header of entryHeaders) {
       const allText = header.items
-        .sort((a, b) => a.y - b.y)
+        .sort((a, b) => a.y - b.y || a.x - b.x)
         .map(i => i.text)
         .join('\n');
-      
+
       let location = 'Sin asignar';
-      if (header.isVirtual) {
-        location = 'Materia Virtual';
-      }
-      
+
       const codAmbMatch = allText.match(/COD\.\s*AMB\.?:?\s*(\S+)/i);
       const tipoMatch = allText.match(/TIPO:\s*([^;\n]+)/i);
-      const lugarMatch = allText.match(/LUGAR:\s*(.+?)(?:\s*\(|$|\n)/m);
-      
+      // LUGAR ocupa varias líneas hasta "COD. AMB."
+      const lugarMatch = allText.match(/LUGAR:\s*([\s\S]*?)\s*(?:COD\.\s*AMB|TIPO:|PISO:|$)/i);
+      const building = lugarMatch ? extractBuilding(lugarMatch[1]) : undefined;
+
       if (codAmbMatch) {
         const codAmb = codAmbMatch[1].replace(/;$/, '');
         const tipo = tipoMatch ? tipoMatch[1].trim() : '';
         const normLoc = normalizeLocation(codAmb, tipo);
         if (normLoc !== 'Sin asignar') {
-          location = normLoc;
+          location = building ? `${normLoc} - ${building}` : normLoc;
         }
-      } else if (lugarMatch && location === 'Sin asignar') {
-        location = lugarMatch[1].trim();
+      } else if (building) {
+        location = building;
       }
-      
-      let closestSub: TempSubject | null = null;
-      let minDistance = Infinity;
-      for (const sub of subjects) {
-        const dist = Math.abs(sub.y - header.y);
-        if (dist < minDistance) {
-          minDistance = dist;
-          closestSub = sub;
-        }
-      }
-      
+
+      const closestSub = findClosestSubject(header.y);
       if (!closestSub || !closestSub.name) continue;
-      
+
       const subjectKey = closestSub.name.toUpperCase();
       const subjectColor = getSubjectColor(subjectKey, subjectColors);
-      
+
       if (header.isVirtual) {
+        subjectsWithSessions.add(closestSub);
         sessions.push({
           id: crypto.randomUUID(),
           subject: subjectKey,
-          subject_faculty: faculty,
-          day: undefined,
-          startTime: undefined,
-          endTime: undefined,
           teacher: closestSub.teacher || 'Sin asignar',
           location: 'Virtual',
           floor: 'N/A',
@@ -441,36 +486,45 @@ function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[
           conflict: false,
           color: subjectColor,
         });
-      } else {
-        const match = header.text.match(dayTimeRegex);
-        if (match) {
-          const dayMatch = header.text.match(/\b(LUNES|MARTES|MI[EÉ]RCOLES|JUEVES|VIERNES)\b/i);
-          const timesMatch = header.text.match(/\((\d{1,2}):(\d{2}):\d{2}-(\d{1,2}):(\d{2}):\d{2}\)/i);
-          
-          if (dayMatch && timesMatch) {
-            const dayName = dayMatch[1].toLowerCase().replace('é', 'e').replace('í', 'i');
-            const day = DAY_MAP[dayName];
-            
-            if (day) {
-              const floorMatch = location.match(/Piso\s*(\d+)/i);
-              sessions.push({
-                id: crypto.randomUUID(),
-                subject: subjectKey,
-                subject_faculty: faculty,
-                day,
-                startTime: `${timesMatch[1].padStart(2, '0')}:${timesMatch[2]}`,
-                endTime: `${timesMatch[3].padStart(2, '0')}:${timesMatch[4]}`,
-                teacher: closestSub.teacher || 'Sin asignar',
-                location,
-                floor: floorMatch?.[1] || 'N/A',
-                isVirtual: false,
-                conflict: false,
-                color: subjectColor,
-              });
-            }
-          }
-        }
+        continue;
       }
+
+      const dayMatch = header.text.match(/\b(LUNES|MARTES|MI[EÉ]RCOLES|JUEVES|VIERNES)\b/i);
+      const timesMatch = header.text.match(/\((\d{1,2}):(\d{2}):\d{2}-(\d{1,2}):(\d{2}):\d{2}\)/i);
+      const day = dayMatch ? DAY_MAP[normalizeLabel(dayMatch[1]).toLowerCase()] : undefined;
+      if (!day || !timesMatch) continue;
+
+      const floorMatch = location.match(/Piso\s*(\d+)/i);
+      subjectsWithSessions.add(closestSub);
+      sessions.push({
+        id: crypto.randomUUID(),
+        subject: subjectKey,
+        day,
+        startTime: `${timesMatch[1].padStart(2, '0')}:${timesMatch[2]}`,
+        endTime: `${timesMatch[3].padStart(2, '0')}:${timesMatch[4]}`,
+        teacher: closestSub.teacher || 'Sin asignar',
+        location,
+        floor: floorMatch?.[1] || 'N/A',
+        isVirtual: false,
+        conflict: false,
+        color: subjectColor,
+      });
+    }
+
+    // Materias inscritas sin bloques (p. ej. "HORARIO NO ASIGNADO"): se conservan sin horario
+    for (const sub of subjects) {
+      if (subjectsWithSessions.has(sub) || !sub.name) continue;
+      const subjectKey = sub.name.toUpperCase();
+      sessions.push({
+        id: crypto.randomUUID(),
+        subject: subjectKey,
+        teacher: sub.teacher || 'Sin asignar',
+        location: 'Horario no asignado',
+        floor: 'N/A',
+        isVirtual: false,
+        conflict: false,
+        color: getSubjectColor(subjectKey, subjectColors),
+      });
     }
   }
   return sessions;

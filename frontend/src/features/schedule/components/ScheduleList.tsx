@@ -137,7 +137,7 @@ export const ScheduleList: React.FC<ScheduleListProps> = ({ schedule, onResolveC
       {virtualClasses.length > 0 && (
         <Card className="bg-surface-container-low border border-outline-variant/30 rounded-[2rem] p-5 shadow-editorial">
           <h3 className="text-base font-bold text-on-surface mb-3 flex items-center gap-2">
-            Materias Virtuales
+            Virtuales / Sin horario fijo
           </h3>
           <div className="space-y-3">
             {virtualClasses.map((session) => (
@@ -157,7 +157,7 @@ export const ScheduleList: React.FC<ScheduleListProps> = ({ schedule, onResolveC
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="px-2.5 py-0.5 bg-primary-fixed/20 text-on-primary-fixed-variant text-[10px] rounded-full font-bold">
-                    VIRTUAL
+                    {session.isVirtual ? 'VIRTUAL' : 'SIN HORARIO'}
                   </span>
                   <ChevronRight size={16} className="text-on-surface-variant" />
                 </div>
@@ -192,12 +192,12 @@ export const ScheduleList: React.FC<ScheduleListProps> = ({ schedule, onResolveC
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1 p-3 bg-surface-container-low rounded-xl">
                   <span className="text-[10px] text-outline uppercase font-bold tracking-wider">Día</span>
-                  <span className="text-on-surface text-base font-bold">{selected.day || 'Virtual / N/A'}</span>
+                  <span className="text-on-surface text-base font-bold">{selected.day || (selected.isVirtual ? 'Virtual' : 'Sin asignar')}</span>
                 </div>
                 <div className="flex flex-col gap-1 p-3 bg-surface-container-low rounded-xl">
                   <span className="text-[10px] text-outline uppercase font-bold tracking-wider">Horario</span>
                   <span className="text-on-surface text-base font-bold">
-                    {selected.startTime && selected.endTime ? `${selected.startTime} - ${selected.endTime}` : 'Virtual'}
+                    {selected.startTime && selected.endTime ? `${selected.startTime} - ${selected.endTime}` : selected.isVirtual ? 'Virtual' : 'Sin asignar'}
                   </span>
                 </div>
               </div>

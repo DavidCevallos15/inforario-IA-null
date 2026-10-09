@@ -131,25 +131,25 @@ const sguLayout = (): TextItem[] => [
   { text: 'ALUMNO DE PRUEBA', x: 120, y: 130, page: 1 },
 
   { text: 'ASIGNATURA', x: 40, y: 220, page: 1 },
-  { text: 'DOCENTE', x: 270, y: 220, page: 1 },
+  { text: 'DOCENTE', x: 363, y: 220, page: 1 },
   { text: 'HORARIO Y AMBIENTE', x: 500, y: 220, page: 1 },
 
   // Materia 1: dos bloques presenciales
   { text: 'SISTEMAS DISTRIBUIDOS (A19)', x: 40, y: 250, page: 1 },
-  { text: 'ING. PEREZ GOMEZ JUAN CARLOS', x: 270, y: 250, page: 1 },
+  { text: 'ING. PEREZ GOMEZ JUAN CARLOS', x: 330, y: 250, page: 1 },
   { text: '- LUNES (07:00:00-09:00:00)', x: 500, y: 245, page: 1 },
   { text: 'COD. AMB.: 1-59-2-04-A; TIPO: AULA', x: 500, y: 255, page: 1 },
   { text: '- MIERCOLES (07:00:00-09:00:00)', x: 500, y: 265, page: 1 },
 
   // Materia 2: choca con la materia 1 el lunes
   { text: 'INGENIERIA DE SOFTWARE', x: 40, y: 300, page: 1 },
-  { text: 'LIC. LOPEZ DIAZ MARIA', x: 270, y: 300, page: 1 },
+  { text: 'LIC. LOPEZ DIAZ MARIA', x: 330, y: 300, page: 1 },
   { text: '- LUNES (08:00:00-10:00:00)', x: 500, y: 300, page: 1 },
   { text: 'COD. AMB.: 1-59-3-06-LC; TIPO: LABORATORIO', x: 500, y: 310, page: 1 },
 
   // Materia 3: virtual
   { text: 'ETICA PROFESIONAL', x: 40, y: 350, page: 1 },
-  { text: 'TEMP DOCENTE', x: 270, y: 350, page: 1 },
+  { text: 'TEMP DOCENTE', x: 330, y: 350, page: 1 },
   { text: 'MATERIA VIRTUAL', x: 500, y: 350, page: 1 },
 
   { text: 'LEYENDAS', x: 40, y: 420, page: 1 },
