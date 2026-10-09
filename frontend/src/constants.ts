@@ -7,4 +7,4 @@ export const SUPABASE_KEY = "sb_publishable_Sb2jQcuTd4OLQhloeIZTww_k95fFjdw";
 // ID de cliente OAuth de Google (público). Debe coincidir con el secreto GOOGLE_CLIENT_ID
 // configurado en las Edge Functions de Supabase.
 export const GOOGLE_CLIENT_ID =
-  import.meta.env.VITE_GOOGLE_CLIENT_ID || "303071798512-muiirok53evctbn1rdmtisl2f6rednbn.apps.googleusercontent.com";
+  import.meta.env.VITE_GOOGLE_CLIENT_ID || "957167965754-u1b9kair2okpli2lf5mulmng33jlkb1g.apps.googleusercontent.com";
