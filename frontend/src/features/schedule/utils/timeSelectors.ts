@@ -59,3 +59,62 @@ export const getScheduleHoursRange = (
 
   return { minHour: finalMin, maxHour: finalMax };
 };
+
+/**
+ * Reparte en carriles las clases de un mismo día: las que se cruzan quedan lado
+ * a lado (manteniendo su hora real de inicio y fin) en lugar de taparse.
+ * Devuelve, por id, el carril de cada clase y cuántos carriles tiene su grupo.
+ */
+export const layoutLanes = (sessions: ClassSession[]): Map<string, { lane: number; lanes: number }> => {
+  const result = new Map<string, { lane: number; lanes: number }>();
+  const timed = sessions
+    .filter((s) => s.startTime && s.endTime)
+    .sort((a, b) => timeToMins(a.startTime!) - timeToMins(b.startTime!) || timeToMins(a.endTime!) - timeToMins(b.endTime!));
+
+  let group: ClassSession[] = [];
+  let laneEnds: number[] = [];
+  let groupEnd = -1;
+
+  const flush = () => {
+    for (const s of group) {
+      const entry = result.get(s.id)!;
+      result.set(s.id, { lane: entry.lane, lanes: laneEnds.length });
+    }
+    group = [];
+    laneEnds = [];
+  };
+
+  for (const s of timed) {
+    const start = timeToMins(s.startTime!);
+    const end = timeToMins(s.endTime!);
+    if (group.length && start >= groupEnd) flush();
+    let lane = laneEnds.findIndex((laneEnd) => laneEnd <= start);
+    if (lane === -1) {
+      lane = laneEnds.length;
+      laneEnds.push(end);
+    } else {
+      laneEnds[lane] = end;
+    }
+    result.set(s.id, { lane, lanes: 1 });
+    group.push(s);
+    groupEnd = Math.max(group.length === 1 ? end : groupEnd, end);
+  }
+  if (group.length) flush();
+  return result;
+};
+
+/**
+ * Plantilla de columnas de la semana: un día con clases en choque se ensancha
+ * para que los bloques lado a lado sigan siendo legibles.
+ */
+export const weekColumnTemplate = (
+  timeColumn: string,
+  lanesByDay: Record<string, Map<string, { lane: number; lanes: number }>>,
+  days: string[]
+): string =>
+  `${timeColumn} ${days
+    .map((day) => {
+      const maxLanes = Math.max(1, ...[...(lanesByDay[day]?.values() ?? [])].map((v) => v.lanes));
+      return `${Math.min(2, 1 + 0.5 * (maxLanes - 1))}fr`;
+    })
+    .join(' ')}`;

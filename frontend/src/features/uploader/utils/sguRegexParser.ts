@@ -1,5 +1,6 @@
 import { ClassSession, DAYS } from "../../../types";
 import { TextItem } from "./pdfText";
+import { HIGHLIGHTER_HEXES } from "../../../lib/highlighters";
 
 // ------------------------------------------------------------------
 // INTERFACES
@@ -23,7 +24,8 @@ const DAY_MAP: Record<string, 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Vi
   'viernes': 'Viernes',
 };
 
-const SUBJECT_COLORS = ['#22C55E', '#3B82F6', '#F97316', '#EF4444', '#A855F7', '#06B6D4', '#EAB308'];
+// Resaltadores del cuaderno (el rojo queda reservado para choques)
+const SUBJECT_COLORS = HIGHLIGHTER_HEXES;
 
 /**
  * Asigna un color estable por materia a las sesiones que aún no tienen uno

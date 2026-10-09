@@ -1,360 +1,173 @@
 import React, { useMemo, useState } from 'react';
-import { Schedule, DAYS, ClassSession, ScheduleTheme } from '../../../types';
-import { AlertTriangle } from 'lucide-react';
-import { SubjectCard } from './SubjectCard';
-import { getScheduleHoursRange as calcHoursRange } from '../utils/timeSelectors';
+import { motion, useReducedMotion } from 'framer-motion';
+import { CircleAlert } from 'lucide-react';
+import { ClassSession, DAYS, Schedule } from '../../../types';
+import { getScheduleHoursRange, layoutLanes, timeToMins, weekColumnTemplate } from '../utils/timeSelectors';
+import { getLiveSessionId, getTimeState, todayOf } from '../utils/timeState';
+import { DEFAULT_HIGHLIGHTER, inkOn } from '../../../lib/highlighters';
+import { useNow } from '../../../hooks/useNow';
+import { hyphenateEs } from '../../../lib/hyphenate';
+import { ease } from '../../../lib/motion';
 import { Modal } from '../../../components/ui/Modal';
-import { Button } from '../../../components/ui/Button';
+import { SessionDetail } from './SessionDetail';
+import { UnscheduledList } from './UnscheduledList';
 
 interface ScheduleGridProps {
   schedule: Schedule;
   onResolveConflict: (session: ClassSession) => void;
-  theme?: ScheduleTheme;
   fontScale?: number;
 }
 
-const hexToRgb = (hex: string) => {
-  const cleaned = hex.replace('#', '').trim();
-  if (cleaned.length !== 6) {
-    return { r: 0, g: 0, b: 0 };
-  }
-  const r = parseInt(cleaned.substring(0, 2), 16);
-  const g = parseInt(cleaned.substring(2, 4), 16);
-  const b = parseInt(cleaned.substring(4, 6), 16);
-  return { r, g, b };
-};
+// Una hora ocupa 3 cuadros de la hoja (3 × 24 px): la cuadrícula del papel coincide con las horas
+const CELL = 24;
+const HOUR_PX = CELL * 3;
 
-const getTextColor = (bg: string) => {
-  const { r, g, b } = hexToRgb(bg);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.6 ? '#111111' : '#ffffff';
-};
-
-const FALLBACK_COLOR = '#22C55E';
-
-export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
-  schedule,
-  onResolveConflict,
-  theme = 'DEFAULT',
-  fontScale = 1,
-}) => {
+/** Semana en la hoja cuadriculada: columnas de lunes a viernes, clases marcadas con resaltador. */
+export const ScheduleGrid: React.FC<ScheduleGridProps> = ({ schedule, onResolveConflict, fontScale = 1 }) => {
   const [selected, setSelected] = useState<ClassSession | null>(null);
+  const reduce = useReducedMotion();
+  const now = useNow();
 
-  const regularClasses = useMemo(
+  const regular = useMemo(
     () => schedule.sessions.filter((s) => !s.isVirtual && s.day && s.startTime && s.endTime),
     [schedule.sessions]
   );
-
-  const virtualClasses = useMemo(
+  const unscheduled = useMemo(
     () => schedule.sessions.filter((s) => s.isVirtual || !s.day || !s.startTime || !s.endTime),
     [schedule.sessions]
   );
 
-  const { minHour, maxHour } = useMemo(() => {
-    return calcHoursRange(regularClasses);
-  }, [regularClasses]);
-
-  const hours = Array.from({ length: maxHour - minHour }, (_, i) => i + minHour);
-
-  const getPosition = (session: ClassSession) => {
-    if (!session.startTime || !session.endTime) {
-      return { top: '0px', height: '80px' };
-    }
-    const [startH, startM] = session.startTime.split(':').map(Number);
-    const [endH, endM] = session.endTime.split(':').map(Number);
-    const startOffset = (startH - minHour) * 60 + startM;
-    const duration = (endH * 60 + endM) - (startH * 60 + startM);
-    return {
-      top: `${(startOffset / 60) * 82}px`, // slightly padded
-      height: `${(duration / 60) * 80}px`,
-    };
-  };
-
-  const getThemeStyles = () => {
-    switch (theme) {
-      case 'MINIMALIST':
-        return {
-          container: 'bg-white border-2 border-black rounded-none shadow-none overflow-hidden',
-          header: 'bg-black text-white border-r border-gray-800',
-          timeCol: 'bg-white text-black border-r-2 border-black font-serif',
-          gridBg: 'bg-white',
-          gridLine: 'border-gray-200',
-          dayCol: 'border-r border-gray-200',
-          event: (color: string) => {
-            const textColor = getTextColor(color);
-            return {
-              className: 'border-2 border-black rounded-none shadow-none',
-              style: {
-                backgroundColor: color,
-                color: textColor,
-                borderLeftColor: textColor,
-                borderLeftWidth: '4px',
-              },
-            };
-          },
-        };
-      case 'SCHOOL':
-        return {
-          container: 'bg-[#fffdf0] border-4 border-orange-300 rounded-3xl shadow-xl overflow-hidden',
-          header: 'bg-orange-100 text-orange-800 border-r border-orange-200',
-          timeCol: 'bg-[#fffdf0] text-orange-600 border-r-2 border-orange-200 border-dashed',
-          gridBg: 'bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]',
-          gridLine: 'border-orange-100 border-dashed',
-          dayCol: 'border-r-2 border-orange-200 border-dashed',
-          event: (color: string) => {
-            const textColor = getTextColor(color);
-            return {
-              className: 'rounded-xl border-2 border-slate-800 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-medium',
-              style: {
-                backgroundColor: color,
-                color: textColor,
-                borderLeftColor: textColor,
-                borderLeftWidth: '4px',
-              },
-            };
-          },
-        };
-      case 'NEON':
-        return {
-          container: 'bg-slate-900 border border-cyan-500/50 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.2)] overflow-hidden',
-          header: 'bg-slate-950 text-cyan-400 border-r border-cyan-900',
-          timeCol: 'bg-slate-900 text-cyan-600 border-r border-cyan-900',
-          gridBg: 'bg-slate-900',
-          gridLine: 'border-cyan-900/30',
-          dayCol: 'border-r border-cyan-900/50',
-          event: (color: string) => {
-            const textColor = getTextColor(color);
-            return {
-              className: 'border border-cyan-400 rounded-sm shadow-[0_0_10px_rgba(6,182,212,0.3)] backdrop-blur-sm',
-              style: {
-                backgroundColor: color,
-                color: textColor,
-                borderLeftColor: textColor,
-                borderLeftWidth: '4px',
-              },
-            };
-          },
-        };
-      case 'DEFAULT':
-      default:
-        // Academic Curator DEFAULT — verde menta
-        return {
-          container: 'bg-surface-container-lowest rounded-[2rem] border border-outline-variant/20 overflow-hidden editorial-shadow p-2',
-          header: 'bg-surface-container-high text-on-surface border-r border-outline-variant/15 font-bold rounded-xl py-3 m-1',
-          timeCol: 'bg-surface-container-lowest text-on-surface-variant border-r border-outline-variant/15',
-          gridBg: 'bg-surface-container-lowest',
-          gridLine: 'border-outline-variant/15',
-          dayCol: 'border-r border-outline-variant/15',
-          event: (color: string) => {
-            const textColor = getTextColor(color);
-            return {
-              className: 'rounded-2xl transition-all duration-200 hover:scale-[1.02] hover:shadow-editorial-lg',
-              style: {
-                backgroundColor: color,
-                color: textColor,
-                borderLeftColor: textColor,
-                borderLeftWidth: '4px',
-                boxShadow: '0 6px 16px rgba(0,0,0,0.08)',
-              },
-            };
-          },
-        };
-    }
-  };
-
-  const styles = getThemeStyles();
-
-  const headerFontSize = 12 * fontScale;
-  const timeFontSize = 12 * fontScale;
-  const detailsFontSize = 11 * fontScale;
-
-  const safeSlice = (value?: string, len = 3) => {
-    return value ? value.slice(0, len) : '';
-  };
+  const { minHour, maxHour } = useMemo(() => getScheduleHoursRange(regular), [regular]);
+  // Clases que se cruzan: lado a lado, cada una con su hora real; su día se ensancha
+  const lanesByDay = useMemo(
+    () => Object.fromEntries(DAYS.map((day) => [day, layoutLanes(regular.filter((s) => s.day === day))])),
+    [regular]
+  );
+  const columns = weekColumnTemplate('56px', lanesByDay, DAYS);
+  const hours = Array.from({ length: maxHour - minHour }, (_, i) => minHour + i);
+  const live = getLiveSessionId(regular, now);
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const today = todayOf(now);
+  const hourPx = Math.round(HOUR_PX * Math.max(1, fontScale));
 
   return (
-    <div className="flex flex-col gap-8 w-full">
-      <div className="w-full overflow-x-auto no-scrollbar">
-        <div className="min-w-[900px] p-1">
-          <div className={`w-full ${styles.container}`}>
-            <div className="relative w-full">
-              {/* Header Days */}
-              <div className="grid grid-cols-[50px_1fr_1fr_1fr_1fr_1fr] sticky top-0 z-20">
-                <div
-                  className={`text-center font-bold flex items-center justify-center ${styles.header}`}
-                  style={{ fontSize: `${headerFontSize}px` }}
+    <div className="flex w-full flex-col gap-10">
+      <div className="no-scrollbar w-full overflow-x-auto">
+        <div className="min-w-[760px]">
+          {/* Días */}
+          <div // Sin sticky: dentro de un contenedor con scroll horizontal, top-16 desplazaba la fila sobre las clases
+            className="grid gap-x-1.5 border-b border-outline-variant bg-surface-container-lowest pb-2 pt-1"
+            style={{ gridTemplateColumns: columns }}
+          >
+            <span />
+            {DAYS.map((day) => (
+              <div key={day} className="text-center">
+                <span
+                  className={`ink relative inline-block px-1 text-xl font-bold ${day === today ? 'text-on-surface' : ''}`}
+                  aria-current={day === today ? 'date' : undefined}
                 >
-                  HORA
-                </div>
-                {DAYS.map((day) => (
-                  <div
-                    key={day}
-                    className={`text-center uppercase tracking-wider flex items-center justify-center ${styles.header}`}
-                    style={{ fontSize: `${headerFontSize}px` }}
-                  >
-                    <span className="md:hidden">{safeSlice(day, 1)}</span>
-                    <span className="hidden md:inline">{safeSlice(day, 3)}</span>
-                  </div>
-                ))}
+                  {day === today && <span aria-hidden className="absolute inset-x-0 -bottom-0.5 h-1.5 rounded-full bg-hl-yellow" />}
+                  {day}
+                </span>
               </div>
+            ))}
+          </div>
 
-              {/* Grid Body */}
-              <div className={`grid grid-cols-[50px_1fr_1fr_1fr_1fr_1fr] relative ${styles.gridBg}`}>
-                {/* Time column */}
-                <div className={`z-10 ${styles.timeCol}`}>
-                  {hours.map((h) => (
-                    <div
-                      key={h}
-                      className={`h-[82px] border-b p-1 text-right pr-3 ${styles.gridLine} flex items-start justify-end pt-2 font-medium`}
-                      style={{ fontSize: `${timeFontSize}px` }}
-                    >
-                      {h}:00
-                    </div>
-                  ))}
-                </div>
-
-                {/* Day columns */}
-                {DAYS.map((day) => (
-                  <div key={day} className={`relative ${styles.dayCol}`}>
-                    {hours.map((h) => (
-                      <div key={`${day}-${h}`} className={`h-[82px] border-b ${styles.gridLine}`} />
-                    ))}
-
-                    {/* Classes */}
-                    {regularClasses
-                      .filter((s) => s.day === day)
-                      .map((session) => {
-                        const pos = getPosition(session);
-                        const eventStyles = styles.event(session.color || FALLBACK_COLOR);
-
-                        return (
-                          <div
-                            key={session.id}
-                            className="absolute w-[94%] left-[3%] z-10"
-                            style={{ ...pos }}
-                          >
-                            {session.conflict && (
-                              <div className="absolute top-2 right-2 text-error z-20 animate-pulse bg-error-container p-1 rounded-full border border-error/20">
-                                <AlertTriangle size={14} />
-                              </div>
-                            )}
-                            <SubjectCard
-                              session={session}
-                              className={`h-full ${session.conflict ? '!border-l-error !bg-error-container/85 !ring-2 !ring-error/20' : eventStyles.className}`}
-                              style={{ ...eventStyles.style, fontSize: `${detailsFontSize}px` }}
-                              onClick={() => setSelected(session)}
-                            />
-                          </div>
-                        );
-                      })}
-                  </div>
-                ))}
-              </div>
+          {/* Cuerpo: la cuadrícula del papel alineada a las horas */}
+          <div className="paper-grid relative grid gap-x-1.5" style={{ gridTemplateColumns: columns, ['--grid-size' as string]: `${hourPx / 3}px` }}>
+            <div className="relative">
+              {hours.map((h, i) => (
+                <time
+                  key={h}
+                  className="tabular absolute right-2 -translate-y-1/2 bg-surface-container-lowest px-0.5 text-xs font-bold text-on-surface-variant first:translate-y-0"
+                  style={{ top: i * hourPx }}
+                >
+                  {String(h).padStart(2, '0')}:00
+                </time>
+              ))}
             </div>
+
+            {DAYS.map((day, dayIndex) => {
+              const lanes = lanesByDay[day];
+              return (
+              <div key={day} className="relative" style={{ height: hours.length * hourPx }}>
+                {/* Línea de "ahora": tinta azul a la hora actual, solo en la columna de hoy */}
+                {day === today && nowMins >= minHour * 60 && nowMins < maxHour * 60 && (
+                  <div aria-hidden className="pointer-events-none absolute inset-x-0 z-20 flex items-center" style={{ top: ((nowMins - minHour * 60) / 60) * hourPx }}>
+                    <span className="-ml-1 h-2.5 w-2.5 rounded-full bg-primary" />
+                    <span className="h-0.5 flex-1 bg-primary" />
+                  </div>
+                )}
+                {regular
+                  .filter((s) => s.day === day)
+                  .sort((a, b) => a.startTime!.localeCompare(b.startTime!))
+                  .map((session, i) => {
+                    const start = timeToMins(session.startTime!);
+                    const top = ((start - minHour * 60) / 60) * hourPx;
+                    const height = ((timeToMins(session.endTime!) - start) / 60) * hourPx;
+                    const color = session.color || DEFAULT_HIGHLIGHTER;
+                    const state = getTimeState(session, now, live);
+                    const { lane, lanes: laneCount } = lanes.get(session.id) ?? { lane: 0, lanes: 1 };
+
+                    return (
+                      <motion.button
+                        key={session.id}
+                        type="button"
+                        onClick={() => setSelected(session)}
+                        // La semana se "escribe" celda por celda al aparecer
+                        initial={reduce ? false : { opacity: 0.4, y: 6 }}
+                        animate={{ opacity: state === 'past' ? 0.45 : 1, y: 0 }}
+                        transition={{ duration: 0.32, ease: ease.disclosure, delay: reduce ? 0 : dayIndex * 0.05 + i * 0.03 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={`group absolute flex flex-col overflow-hidden rounded-sm p-2 text-left shadow-editorial transition-shadow duration-150 hover:shadow-editorial-lg ${
+                          session.conflict ? 'outline outline-2 -outline-offset-2 outline-error' : ''
+                        } ${state === 'now' ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface-container-lowest' : ''}`}
+                        style={{
+                          top: top + 1,
+                          height: height - 2,
+                          left: `calc(${(lane / laneCount) * 100}% + 2px)`,
+                          width: `calc(${100 / laneCount}% - 4px)`,
+                          backgroundColor: color,
+                          color: inkOn(color),
+                          fontSize: `${13 * fontScale}px`,
+                        }}
+                        aria-label={`${session.subject}, ${session.day} de ${session.startTime} a ${session.endTime}, ${session.location}`}
+                      >
+                        {(state === 'now' || state === 'next') && (
+                          <span className="mb-1 self-start rounded-sm bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-on-primary">
+                            {state === 'now' ? 'Ahora' : 'Siguiente'}
+                          </span>
+                        )}
+                        {/* Guiones suaves por sílaba y puntos suspensivos: ninguna palabra se corta en el borde del bloque */}
+                        <span className={`line-clamp-3 font-extrabold leading-tight [hyphens:manual] ${session.conflict ? 'pr-6' : ''}`}>{hyphenateEs(session.subject)}</span>
+                        <time className="tabular mt-1 text-[0.85em] font-bold opacity-80">
+                          {session.startTime} - {session.endTime}
+                        </time>
+                        <span className="mt-auto truncate pt-1 text-[0.85em] font-semibold opacity-80">
+                          {session.location.split(' - ').slice(0, 2).join(' · ')}
+                        </span>
+                        {session.conflict && (
+                          <span className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-error text-on-error" title="Choque de horario">
+                            <CircleAlert size={14} strokeWidth={2.5} />
+                          </span>
+                        )}
+                      </motion.button>
+                    );
+                  })}
+              </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {virtualClasses.length > 0 && (
-        <div className="bg-surface-container-low border border-outline-variant/30 rounded-[2rem] p-6 shadow-editorial">
-          <h3 className="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
-            Materias Virtuales / Sin Horario Fijo
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {virtualClasses.map((session) => (
-              <div
-                key={session.id}
-                className="bg-surface-container-lowest p-4 rounded-2xl shadow-sm border border-outline-variant/20 border-l-4 hover:shadow-editorial transition-all"
-                style={{ borderLeftColor: session.color || FALLBACK_COLOR }}
-                onClick={() => setSelected(session)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => e.key === 'Enter' && setSelected(session)}
-              >
-                <h4 className="font-bold text-sm text-on-surface break-words whitespace-normal leading-tight">{session.subject}</h4>
-                <p className="text-xs text-on-surface-variant mt-1.5 break-words whitespace-normal leading-tight font-medium">
-                  Docente: {session.teacher || 'N/A'}
-                </p>
-                <div className="mt-2 inline-block px-2.5 py-0.5 bg-primary-fixed/20 text-on-primary-fixed-variant text-[10px] rounded-full font-bold">
-                  {session.isVirtual ? 'VIRTUAL' : 'SIN HORARIO'}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {unscheduled.length > 0 && <UnscheduledList sessions={unscheduled} onSelect={setSelected} />}
 
-      {/* Details Dialog */}
-      <Modal isOpen={!!selected} onClose={() => setSelected(null)}>
-        {selected && (
-          <div className="text-left">
-            <div className="flex items-center justify-between mb-4 border-b border-outline-variant/20 pb-4">
-              <h2 className="text-xl font-bold text-on-surface break-words whitespace-normal leading-tight pr-6">
-                {selected.subject}
-              </h2>
-              {selected.conflict && (
-                <span className="flex items-center gap-1 bg-error-container text-on-error-container px-3 py-1 rounded-full text-xs font-bold shrink-0 border border-error/20">
-                  <AlertTriangle size={12} />
-                  Choque de hora
-                </span>
-              )}
-            </div>
-
-            <div className="space-y-4 text-sm text-on-surface-variant font-medium">
-              <div className="flex flex-col gap-1 p-3 bg-surface-container-low rounded-xl">
-                <span className="text-[10px] text-outline uppercase font-bold tracking-wider">Docente</span>
-                <span className="text-on-surface text-base font-bold">{selected.teacher || 'Sin Asignar'}</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1 p-3 bg-surface-container-low rounded-xl">
-                  <span className="text-[10px] text-outline uppercase font-bold tracking-wider">Día</span>
-                  <span className="text-on-surface text-base font-bold">{selected.day || 'N/A'}</span>
-                </div>
-                <div className="flex flex-col gap-1 p-3 bg-surface-container-low rounded-xl">
-                  <span className="text-[10px] text-outline uppercase font-bold tracking-wider">Horario</span>
-                  <span className="text-on-surface text-base font-bold">
-                    {selected.startTime && selected.endTime ? `${selected.startTime} - ${selected.endTime}` : selected.isVirtual ? 'Virtual' : 'Sin asignar'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1 p-3 bg-surface-container-low rounded-xl">
-                  <span className="text-[10px] text-outline uppercase font-bold tracking-wider">Lugar</span>
-                  <span className="text-on-surface text-base font-bold">{selected.location || 'Virtual'}</span>
-                </div>
-                <div className="flex flex-col gap-1 p-3 bg-surface-container-low rounded-xl">
-                  <span className="text-[10px] text-outline uppercase font-bold tracking-wider">Piso</span>
-                  <span className="text-on-surface text-base font-bold text-primary">{selected.floor || 'N/A'}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              {selected.conflict && (
-                <Button
-                  variant="primary"
-                  onClick={() => {
-                    onResolveConflict(selected);
-                    setSelected(null);
-                  }}
-                  className="flex-1 text-sm py-3"
-                >
-                  Quitar del horario
-                </Button>
-              )}
-              <Button
-                variant={selected.conflict ? "ghost" : "secondary"}
-                onClick={() => setSelected(null)}
-                className="flex-1 text-sm py-3"
-              >
-                Cerrar
-              </Button>
-            </div>
-          </div>
-        )}
+      <Modal isOpen={!!selected} onClose={() => setSelected(null)} title="Detalle de la clase">
+        {selected && <SessionDetail session={selected} onClose={() => setSelected(null)} onRemove={onResolveConflict} />}
       </Modal>
     </div>
   );
 };
+
+export default ScheduleGrid;

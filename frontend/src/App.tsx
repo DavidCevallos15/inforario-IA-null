@@ -26,9 +26,12 @@ const LoginPage = lazy(() => import('./components/pages/LoginPage'));
 const ProfilePage = lazy(() => import('./components/pages/ProfilePage'));
 const AboutPage = lazy(() => import('./components/AboutPage'));
 
+// Mientras carga una vista: renglones a lápiz con la forma de un título y su texto
 const ViewFallback = () => (
-  <div className="flex justify-center items-center h-64" role="status" aria-label="Cargando">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+  <div className="space-y-4 py-12" role="status" aria-label="Cargando">
+    <div className="h-10 w-2/3 max-w-md animate-pulse rounded bg-pencil/20" />
+    <div className="h-4 w-full max-w-xl animate-pulse rounded bg-pencil/15" />
+    <div className="h-4 w-5/6 max-w-lg animate-pulse rounded bg-pencil/15" />
   </div>
 );
 
@@ -94,6 +97,11 @@ const App: React.FC = () => {
 
   useGuestScheduleSync({ sessionUser, currentSchedule, setCurrentSchedule, onMigrated: fetchSchedules });
 
+  // Cada vista empieza arriba de la hoja
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [view]);
+
   const { isProcessing, uploadFile } = useScheduleUpload({
     deviceId,
     onSuccess: (newSchedule) => {
@@ -157,11 +165,17 @@ const App: React.FC = () => {
   };
 
   return (
-    <>
-      <div className="fixed top-0 right-0 w-[600px] h-[600px] -z-10 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(0,73,37,0.04) 0%, transparent 70%)' }} />
-      <div className="relative min-h-screen w-full overflow-hidden flex flex-col pt-20">
+    // El escritorio y, encima, una sola hoja de cuaderno que contiene toda la app
+    <div className="min-h-dvh w-full bg-surface-container-high md:px-6 md:py-6">
+      <a
+        href="#contenido"
+        className="sr-only z-50 rounded-md bg-primary px-4 py-2 font-bold text-on-primary focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >
+        Saltar al contenido
+      </a>
+      <div className="paper-grid-soft margin-rule relative mx-auto flex min-h-dvh w-full max-w-6xl flex-col overflow-x-clip shadow-sheet [--margin-x:14px] md:min-h-[calc(100dvh-3rem)] md:rounded md:[--margin-x:44px]">
         <Navbar currentView={view} onNavigate={setView} currentSchedule={currentSchedule} sessionUser={sessionUser} userProfile={userProfile} />
-        <main className="flex-grow max-w-7xl mx-auto px-4 py-2 md:py-4 w-full">
+        <main id="contenido" className="w-full flex-grow pl-8 pr-5 md:pl-20 md:pr-12">
           <Suspense fallback={<ViewFallback />}>
             {view === AppView.LOGIN && <LoginPage onLogin={() => setView(AppView.LANDING)} onBack={() => setView(AppView.LANDING)} />}
             {view === AppView.PROFILE && <ProfilePage onBack={() => setView(AppView.LANDING)} onLogout={() => setView(AppView.LANDING)} />}
@@ -178,7 +192,6 @@ const App: React.FC = () => {
                 onOpenSchedule={handleOpenSchedule}
                 onDeleteSchedule={handleDeleteSchedule}
                 onBulkDelete={handleBulkDelete}
-                onNavigate={setView}
               />
             )}
             {view === AppView.DASHBOARD && currentSchedule && (
@@ -198,10 +211,10 @@ const App: React.FC = () => {
             )}
           </Suspense>
         </main>
-        <Footer />
-        <AnimatePresence>{isProcessing && <ProcessingView />}</AnimatePresence>
+        <Footer onNavigate={setView} showCredit={!(view === AppView.ABOUT || (view === AppView.LANDING && !sessionUser))} />
       </div>
-    </>
+      <AnimatePresence>{isProcessing && <ProcessingView />}</AnimatePresence>
+    </div>
   );
 };
 

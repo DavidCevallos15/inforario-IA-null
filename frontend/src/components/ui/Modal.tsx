@@ -1,6 +1,7 @@
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { ease } from '../../lib/motion';
 
 interface ModalProps {
   isOpen: boolean;
@@ -10,63 +11,55 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
-export const Modal: React.FC<ModalProps> = ({
-  isOpen,
-  onClose,
-  title,
-  children,
-  size = 'md',
-}) => {
-  const sizes = {
-    sm: "max-w-md",
-    md: "max-w-lg",
-    lg: "max-w-2xl",
-    xl: "max-w-4xl",
-  };
+const SIZES = { sm: 'sm:max-w-md', md: 'sm:max-w-lg', lg: 'sm:max-w-2xl', xl: 'sm:max-w-4xl' };
+
+/** Una hoja que se apoya sobre la página: panel inferior en el celular, centrada en pantallas anchas. */
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'md' }) => {
+  const reduce = useReducedMotion();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = overflow;
+    };
+  }, [isOpen, onClose]);
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop Overlay */}
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={title}>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 bg-on-surface/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-[#0b1020]/40 dark:bg-black/60"
           />
-
-          {/* Modal content */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 15 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 15 }}
-            transition={{ type: 'spring', duration: 0.5 }}
-            className={`relative w-full ${sizes[size]} bg-surface-container-lowest border border-outline-variant/20 rounded-[2rem] p-6 md:p-8 editorial-shadow z-10 overflow-hidden max-h-[90vh] flex flex-col`}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: 40 }}
+            transition={{ duration: 0.32, ease: ease.disclosure }}
+            className={`paper-grid relative flex max-h-[88dvh] w-full flex-col overflow-hidden rounded-t-xl shadow-editorial-lg sm:rounded ${SIZES[size]}`}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-              {title ? (
-                <h3 className="text-xl md:text-2xl font-bold text-on-surface select-none">
-                  {title}
-                </h3>
-              ) : (
-                <div />
-              )}
+            <div className="flex items-start justify-between gap-4 px-6 pb-2 pt-5">
+              {title ? <h3 className="text-xl font-extrabold text-on-surface">{title}</h3> : <span />}
               <button
+                type="button"
                 onClick={onClose}
-                className="text-on-surface-variant hover:text-error transition-colors p-2 rounded-xl hover:bg-error-container/30"
-                aria-label="Cerrar modal"
+                className="-mr-2 -mt-1 rounded-md p-2 text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+                aria-label="Cerrar"
               >
                 <X size={20} />
               </button>
             </div>
-
-            {/* Scrollable Body */}
-            <div className="overflow-y-auto pr-1 flex-grow">
-              {children}
-            </div>
+            <div className="overflow-y-auto px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">{children}</div>
           </motion.div>
         </div>
       )}

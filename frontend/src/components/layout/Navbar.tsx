@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, User, MessageCircle } from 'lucide-react';
+import { CircleUserRound, LogIn } from 'lucide-react';
 import type { User as AuthUser } from '@supabase/supabase-js';
 import { AppView, Schedule, UserProfile } from '../../types';
 
@@ -11,107 +11,81 @@ interface NavbarProps {
   userProfile: UserProfile | null;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({
-  currentView,
-  onNavigate,
-  currentSchedule,
-  sessionUser,
-  userProfile,
-}) => {
+/** Encabezado de la hoja: el nombre escrito en tinta y la navegación en una sola línea. */
+export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, currentSchedule, sessionUser, userProfile }) => {
+  const link = (view: AppView) =>
+    `relative rounded px-2 py-1.5 text-sm font-bold transition-colors duration-150 ${
+      currentView === view ? 'text-on-surface' : 'text-on-surface-variant hover:text-primary'
+    }`;
+
+  // La vista actual se marca como en el cuaderno: subrayada con resaltador
+  const current = (view: AppView) =>
+    currentView === view ? (
+      <span aria-hidden className="absolute inset-x-1 -bottom-0.5 h-1 rounded-full bg-hl-yellow" />
+    ) : null;
+
+  const firstName = userProfile?.full_name?.split(' ')[0];
+
   return (
-    <nav
-      className="fixed top-0 left-0 z-50 w-full h-20"
-      style={{
-        background: "rgba(255,255,255,0.80)",
-        backdropFilter: "blur(20px)",
-        boxShadow: "0 20px 40px rgba(0,73,37,0.06)",
-      }}
-    >
-      <div className="max-w-7xl mx-auto px-8 h-full flex items-center justify-between">
-        {/* Brand */}
-        <div
-          className="flex items-center gap-2 cursor-pointer"
+    <header className="sticky top-0 z-40 border-b border-outline-variant bg-surface-container-lowest/95 backdrop-blur-sm">
+      <nav
+        aria-label="Principal"
+        className="flex h-16 items-center justify-between gap-3 pl-8 pr-4 md:pl-20 md:pr-12"
+      >
+        <button
+          type="button"
           onClick={() => onNavigate(AppView.LANDING)}
+          className="ink -ml-1 rounded px-1 text-[1.75rem] font-bold leading-none"
+          aria-label="Inforario, ir al inicio"
         >
-          <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
-            <Sparkles size={18} className="text-on-primary" />
-          </div>
-          <span className="text-2xl font-extrabold tracking-tighter text-primary">
-            Inforario
-          </span>
-        </div>
+          Inforario
+        </button>
 
-        {/* Links */}
-        <div className="hidden md:flex items-center gap-8">
-          <span
-            onClick={() => onNavigate(AppView.LANDING)}
-            className={`font-semibold transition-colors duration-300 cursor-pointer text-sm ${
-              currentView === AppView.LANDING
-                ? 'text-primary'
-                : 'text-on-surface-variant hover:text-secondary'
-            }`}
-          >
-            Inicio
-          </span>
-          <span
-            onClick={() => onNavigate(AppView.ABOUT)}
-            className={`font-semibold transition-colors duration-300 cursor-pointer text-sm ${
-              currentView === AppView.ABOUT
-                ? 'text-primary'
-                : 'text-on-surface-variant hover:text-secondary'
-            }`}
-          >
-            Acerca de Inforario
-          </span>
-        </div>
-
-        {/* Auth / Action Button */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 sm:gap-2">
           {currentSchedule && (
             <button
+              type="button"
               onClick={() => onNavigate(AppView.DASHBOARD)}
-              className={`hidden sm:flex items-center gap-2 text-sm font-semibold transition-colors ${
-                currentView === AppView.DASHBOARD
-                  ? 'text-primary'
-                  : 'text-on-surface-variant hover:text-primary'
-              }`}
+              className={link(AppView.DASHBOARD)}
+              aria-current={currentView === AppView.DASHBOARD ? 'page' : undefined}
             >
-              Mi Horario
+              {current(AppView.DASHBOARD)}
+              Mi horario
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => onNavigate(AppView.ABOUT)}
+            className={`${link(AppView.ABOUT)} hidden sm:inline-flex`}
+            aria-current={currentView === AppView.ABOUT ? 'page' : undefined}
+          >
+            {current(AppView.ABOUT)}
+            Cómo funciona
+          </button>
 
           {sessionUser ? (
             <button
+              type="button"
               onClick={() => onNavigate(AppView.PROFILE)}
-              className="flex items-center gap-2 bg-primary-container text-on-primary-container px-4 py-2 rounded-full font-semibold text-sm hover:opacity-90 transition-opacity"
+              className="ml-1 inline-flex items-center gap-2 rounded-md border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm font-bold text-on-surface transition-colors duration-150 hover:border-primary hover:text-primary"
+              aria-current={currentView === AppView.PROFILE ? 'page' : undefined}
             >
-              <User size={16} />
-              <span className="hidden sm:block">
-                {userProfile?.full_name?.split(" ")[0] || "Perfil"}
-              </span>
+              <CircleUserRound size={18} strokeWidth={2} />
+              <span className="hidden max-w-[10ch] truncate sm:inline">{firstName || 'Perfil'}</span>
             </button>
           ) : (
             <button
+              type="button"
               onClick={() => onNavigate(AppView.LOGIN)}
-              className="flex items-center gap-2 border border-primary text-primary px-4 py-2 rounded-full font-semibold text-sm hover:bg-primary/5 transition-colors"
+              className="ml-1 inline-flex items-center gap-2 rounded-md border border-primary px-3 py-2 text-sm font-bold text-primary transition-colors duration-150 hover:bg-primary hover:text-on-primary"
             >
-              Iniciar Sesión
+              <LogIn size={16} strokeWidth={2.25} />
+              <span>Ingresar</span>
             </button>
           )}
-
-          <a
-            href="https://wa.me/593979107716?text=Hola,%20quiero%20dejar%20feedback%20sobre%20Inforario"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 bg-primary text-on-primary px-5 py-2 rounded-full font-semibold text-sm hover:bg-primary-container transition-colors duration-200"
-          >
-            <MessageCircle size={14} className="hidden sm:block" />
-            <span className="hidden sm:block">Feedback</span>
-            <span className="sm:hidden">FB</span>
-          </a>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 };
 
