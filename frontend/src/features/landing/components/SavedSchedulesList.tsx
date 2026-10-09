@@ -1,32 +1,21 @@
 import React, { useState } from 'react';
 import { Calendar, Trash2, Plus, ArrowLeft, Check, CheckSquare } from 'lucide-react';
-import { UserProfile } from '../../../types';
-
-interface ScheduleSummary {
-  id: string;
-  title: string;
-  academic_period?: string;
-  last_updated: string;
-}
+import { ScheduleSummary } from '../../../types';
 
 interface SavedSchedulesListProps {
-  user?: UserProfile;
   schedules: ScheduleSummary[];
   onOpen: (id: string) => void;
   onDelete: (id: string) => void;
   onBulkDelete?: (ids: string[]) => void;
-  onLogout?: () => void;
   onCreateNew: () => void;
   onBack?: () => void;
 }
 
 export const SavedSchedulesList: React.FC<SavedSchedulesListProps> = ({
-  user,
   schedules,
   onOpen,
   onDelete,
   onBulkDelete,
-  onLogout,
   onCreateNew,
   onBack,
 }) => {

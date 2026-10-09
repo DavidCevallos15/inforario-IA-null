@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
 
+const getMatches = (query: string): boolean =>
+  typeof window !== 'undefined' && window.matchMedia(query).matches;
+
 export const useMediaQuery = (query: string): boolean => {
-  const [matches, setMatches] = useState<boolean>(false);
+  // Valor inicial real: evita renderizar la vista de escritorio un instante en móviles
+  const [matches, setMatches] = useState<boolean>(() => getMatches(query));
 
   useEffect(() => {
     const media = window.matchMedia(query);
-    if (media.matches !== matches) {
-      setMatches(media.matches);
-    }
-    const listener = () => setMatches(media.matches);
+    setMatches(media.matches);
+    const listener = (event: MediaQueryListEvent) => setMatches(event.matches);
     media.addEventListener('change', listener);
     return () => media.removeEventListener('change', listener);
-  }, [matches, query]);
+  }, [query]);
 
   return matches;
 };

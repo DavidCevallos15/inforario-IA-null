@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, FileText, PenTool, Sparkles } from 'lucide-react';
-import { AppView } from '../../types';
+import { LayoutDashboard, FileText, PenTool } from 'lucide-react';
+import type { User } from '@supabase/supabase-js';
+import { AppView, ScheduleSummary, UserProfile } from '../../types';
 import { DropZone as Uploader } from '../uploader/components/DropZone';
 import { SavedSchedulesList as ScheduleList } from './components/SavedSchedulesList';
 
@@ -22,9 +23,9 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) =
 );
 
 interface LandingPageProps {
-  sessionUser: any;
-  userProfile: any;
-  savedSchedules: any[];
+  sessionUser: User | null;
+  userProfile: UserProfile | null;
+  savedSchedules: ScheduleSummary[];
   isProcessing: boolean;
   showUploaderInDashboard: boolean;
   setShowUploaderInDashboard: (show: boolean) => void;
@@ -32,7 +33,6 @@ interface LandingPageProps {
   onOpenSchedule: (id: string) => void;
   onDeleteSchedule: (id: string) => void;
   onBulkDelete: (ids: string[]) => void;
-  onSignOut: () => void;
   onNavigate: (view: AppView) => void;
 }
 
@@ -47,7 +47,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onOpenSchedule,
   onDeleteSchedule,
   onBulkDelete,
-  onSignOut,
   onNavigate,
 }) => {
   const fadeUpVariants = {
@@ -141,7 +140,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 onOpen={onOpenSchedule}
                 onDelete={onDeleteSchedule}
                 onBulkDelete={onBulkDelete}
-                onLogout={onSignOut}
                 onCreateNew={() => setShowUploaderInDashboard(true)}
               />
             ) : (
@@ -263,7 +261,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 onOpen={onOpenSchedule}
                 onDelete={onDeleteSchedule}
                 onBulkDelete={onBulkDelete}
-                onLogout={onSignOut}
                 onCreateNew={() => setShowUploaderInDashboard(true)}
               />
             </motion.div>

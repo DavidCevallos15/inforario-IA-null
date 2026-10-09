@@ -2,14 +2,12 @@ import React, { useMemo, useState } from 'react';
 import { Schedule, DAYS, ClassSession, ScheduleTheme } from '../../../types';
 import { AlertTriangle } from 'lucide-react';
 import { SubjectCard } from './SubjectCard';
-import { createPortal } from 'react-dom';
-import { getScheduleHoursRange, getScheduleHoursRange as calcHoursRange } from '../utils/timeSelectors';
+import { getScheduleHoursRange as calcHoursRange } from '../utils/timeSelectors';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
 
 interface ScheduleGridProps {
   schedule: Schedule;
-  isGuest: boolean;
   onResolveConflict: (session: ClassSession) => void;
   theme?: ScheduleTheme;
   fontScale?: number;
@@ -36,7 +34,6 @@ const FALLBACK_COLOR = '#22C55E';
 
 export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
   schedule,
-  isGuest,
   onResolveConflict,
   theme = 'DEFAULT',
   fontScale = 1,
@@ -245,12 +242,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                               session={session}
                               className={`h-full ${session.conflict ? '!border-l-error !bg-error-container/85 !ring-2 !ring-error/20' : eventStyles.className}`}
                               style={{ ...eventStyles.style, fontSize: `${detailsFontSize}px` }}
-                              onClick={() => {
-                                if (session.conflict) {
-                                  onResolveConflict(session);
-                                }
-                                setSelected(session);
-                              }}
+                              onClick={() => setSelected(session)}
                             />
                           </div>
                         );
@@ -349,7 +341,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                   }}
                   className="flex-1 text-sm py-3"
                 >
-                  Resolver Conflicto
+                  Quitar del horario
                 </Button>
               )}
               <Button

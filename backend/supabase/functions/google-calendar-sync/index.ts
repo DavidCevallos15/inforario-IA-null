@@ -1,5 +1,4 @@
-import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 
 type CalendarEventInput = {
@@ -27,6 +26,7 @@ type CalendarTokenRow = {
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_CALENDAR_BASE_URL = 'https://www.googleapis.com/calendar/v3';
 const REFRESH_MARGIN_MS = 60 * 1000;
+const MAX_EVENTS_PER_REQUEST = 100;
 
 const json = (status: number, payload: unknown) =>
   new Response(JSON.stringify(payload), {
@@ -108,7 +108,7 @@ const insertGoogleEvent = async (
   };
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -120,11 +120,12 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const googleClientId = Deno.env.get('GOOGLE_CLIENT_ID');
     const googleClientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return json(500, { success: false, message: 'Faltan variables SUPABASE_URL o SUPABASE_ANON_KEY.' });
+    if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
+      return json(500, { success: false, message: 'Faltan variables de entorno de Supabase.' });
     }
 
     if (!googleClientId || !googleClientSecret) {
@@ -136,7 +137,7 @@ serve(async (req) => {
       return json(401, { success: false, message: 'Falta el token de autenticación.' });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: {
           Authorization: authHeader,
@@ -147,11 +148,14 @@ serve(async (req) => {
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await userClient.auth.getUser();
 
     if (userError || !user) {
       return json(401, { success: false, message: 'Usuario no autenticado.' });
     }
+
+    // Los tokens solo se leen/escriben con service role (el cliente no tiene permisos sobre ellos)
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const payload = (await req.json()) as { calendarId?: string; events?: CalendarEventInput[] };
     const calendarId = payload.calendarId || 'primary';
@@ -159,6 +163,10 @@ serve(async (req) => {
 
     if (!events.length) {
       return json(400, { success: false, message: 'Debes enviar al menos un evento.' });
+    }
+
+    if (events.length > MAX_EVENTS_PER_REQUEST) {
+      return json(413, { success: false, message: `Máximo ${MAX_EVENTS_PER_REQUEST} eventos por solicitud.` });
     }
 
     const { data: tokenRow, error: tokenError } = await supabase

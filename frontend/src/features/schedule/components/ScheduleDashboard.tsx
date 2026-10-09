@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { jsPDF } from 'jspdf';
+import type { User } from '@supabase/supabase-js';
 import {
   GraduationCap,
   Calendar as CalIcon,
@@ -13,8 +13,9 @@ import {
   Check,
   PenTool,
 } from 'lucide-react';
-import { Schedule, ClassSession, ScheduleTheme, DAYS } from '../../../types';
+import { Schedule, ClassSession, ScheduleTheme, DAYS, UserProfile } from '../../../types';
 import { saveScheduleToDB } from '../../../services/supabase/supabaseClient';
+import { resolveConflicts } from '../../uploader/utils/sguRegexParser';
 import { generateICS } from '../../../services/ics/icsGenerator';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { ScheduleGrid } from './ScheduleGrid';
@@ -27,8 +28,8 @@ interface ScheduleDashboardProps {
   currentSchedule: Schedule;
   setCurrentSchedule: React.Dispatch<React.SetStateAction<Schedule | null>>;
   onReset: () => void;
-  sessionUser: any;
-  userProfile: any;
+  sessionUser: User | null;
+  userProfile: UserProfile | null;
   deviceId: string;
   fetchSchedules: (uid: string) => Promise<void>;
 }
@@ -82,8 +83,24 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
     }
   }, [currentSchedule]);
 
-  const handleConflictResolution = (session: ClassSession) => {
-    alert(`Resolviendo conflicto para ${session.subject}.`);
+  const persist = async (updated: Schedule) => {
+    if (deviceId && updated.id) {
+      await saveScheduleToDB(deviceId, updated);
+    }
+  };
+
+  // Resolver un choque = quitar esa clase concreta del horario y recalcular conflictos
+  const handleRemoveSession = async (session: ClassSession) => {
+    const label = `${session.subject}${session.day ? ` (${session.day} ${session.startTime}-${session.endTime})` : ''}`;
+    if (!confirm(`¿Quitar "${label}" de tu horario?`)) return;
+
+    const updatedSchedule: Schedule = {
+      ...currentSchedule,
+      sessions: resolveConflicts(currentSchedule.sessions.filter((s) => s.id !== session.id)),
+      lastUpdated: new Date(),
+    };
+    setCurrentSchedule(updatedSchedule);
+    await persist(updatedSchedule);
   };
 
   const startEditingTitle = () => {
@@ -94,17 +111,22 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
   };
 
   const saveTitle = async () => {
-    if (currentSchedule) {
-      const updatedSchedule = { ...currentSchedule, title: tempTitle };
-      setCurrentSchedule(updatedSchedule);
-
-      // Persist change
-      if (deviceId && updatedSchedule.id) {
-        await saveScheduleToDB(deviceId, updatedSchedule);
-        fetchSchedules(deviceId); // Update saved schedules list
-      }
-    }
+    // Enter y onBlur llaman a esta función: evitar guardar dos veces
+    if (!isEditingTitle) return;
     setIsEditingTitle(false);
+
+    const title = tempTitle.trim();
+    if (!title || title === currentSchedule.title) {
+      setTempTitle(currentSchedule.title);
+      return;
+    }
+
+    const updatedSchedule = { ...currentSchedule, title };
+    setCurrentSchedule(updatedSchedule);
+    if (deviceId && updatedSchedule.id) {
+      await saveScheduleToDB(deviceId, updatedSchedule);
+      fetchSchedules(deviceId); // Actualiza la lista de horarios guardados
+    }
   };
 
   const handleColorChange = async (subject: string, color: string) => {
@@ -117,11 +139,7 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
 
     const updatedSchedule = { ...currentSchedule, sessions: updatedSessions };
     setCurrentSchedule(updatedSchedule);
-
-    // Persist change
-    if (deviceId && updatedSchedule.id) {
-      await saveScheduleToDB(deviceId, updatedSchedule);
-    }
+    await persist(updatedSchedule);
   };
 
   // Font Size Actions
@@ -135,6 +153,8 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
     setIsExporting(true);
 
     try {
+      // Carga diferida: jsPDF (+ html2canvas/dompurify) solo se descarga al exportar
+      const { jsPDF } = await import('jspdf');
       const doc = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
@@ -222,7 +242,7 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
         month: 'long',
         day: 'numeric',
       });
-      const academicPeriod = currentSchedule.academic_period || 'SEPTIEMBRE 2025 - ENERO 2026';
+      const academicPeriod = currentSchedule.academic_period || 'No especificado';
 
       doc.text(`Estudiante: ${studentName}`, 15, 32);
       doc.text(`Período: ${academicPeriod}`, centerX, 32, { align: 'center' });
@@ -512,7 +532,7 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
           const { r, g, b } = hexToRgb(session.color || '#a1f5b8');
 
           let cardBg = [255, 255, 255];
-          let cardText = style.textMain;
+          const cardText = style.textMain;
           if (theme === 'NEON') {
             cardBg = [2, 6, 23];
           }
@@ -531,7 +551,7 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
           const subjectLines = doc.splitTextToSize(session.subject, virtualCardWidth - 6);
           doc.text(subjectLines, cardX + 3, cardY + 3.8);
 
-          let infoY = cardY + 3.8 + subjectLines.length * 3.2;
+          const infoY = cardY + 3.8 + subjectLines.length * 3.2;
           doc.setFont(style.font, 'normal');
           doc.setFontSize(virtualDetailFontSize);
           doc.text(
@@ -572,7 +592,13 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
                       className="text-xl md:text-2xl font-bold text-on-surface border-b-2 border-primary outline-none bg-transparent min-w-[200px]"
                       autoFocus
                       onBlur={saveTitle}
-                      onKeyDown={(e) => e.key === 'Enter' && saveTitle()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveTitle();
+                        if (e.key === 'Escape') {
+                          setTempTitle(currentSchedule.title);
+                          setIsEditingTitle(false);
+                        }
+                      }}
                     />
                     <button
                       onClick={saveTitle}
@@ -739,13 +765,12 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
             {isMobile ? (
               <ScheduleList
                 schedule={currentSchedule}
-                onResolveConflict={handleConflictResolution}
+                onResolveConflict={handleRemoveSession}
               />
             ) : (
               <ScheduleGrid
                 schedule={currentSchedule}
-                isGuest={true}
-                onResolveConflict={handleConflictResolution}
+                onResolveConflict={handleRemoveSession}
                 theme={theme}
                 fontScale={fontScale}
               />
@@ -778,6 +803,7 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
         onClose={() => setCalendarModalOpen(false)}
         onConfirm={(s, e) => generateICS(currentSchedule, s, e)}
         schedule={currentSchedule}
+        isLoggedIn={Boolean(sessionUser)}
       />
     </div>
   );

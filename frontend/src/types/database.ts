@@ -17,3 +17,11 @@ export interface DBResponseSchedule {
   schedule_data: ClassSession[];
   created_at: string;
 }
+
+/** Fila resumida de `schedules` usada en el listado de horarios guardados. */
+export interface ScheduleSummary {
+  id: string;
+  title: string;
+  academic_period?: string;
+  last_updated: string;
+}

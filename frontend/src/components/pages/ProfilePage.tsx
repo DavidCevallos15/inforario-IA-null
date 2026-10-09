@@ -27,7 +27,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onLogout }) => {
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
-          .single();
+          .maybeSingle();
         
         if (data) {
           setProfile(data);
@@ -57,20 +57,22 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, onLogout }) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        // Upsert the profile
-        await supabase
+        // Supabase no lanza excepciones: hay que revisar `error` explícitamente
+        const { error: upsertError } = await supabase
           .from('profiles')
           .upsert({
             id: session.user.id,
             email: session.user.email,
-            full_name: fullName,
+            full_name: fullName.trim(),
             updated_at: new Date().toISOString()
           });
-        
-        // Update auth metadata
-        await supabase.auth.updateUser({
-          data: { full_name: fullName }
+        if (upsertError) throw upsertError;
+
+        // Actualiza los metadatos de auth (dispara USER_UPDATED y refresca la Navbar)
+        const { error: authError } = await supabase.auth.updateUser({
+          data: { full_name: fullName.trim() }
         });
+        if (authError) throw authError;
         
         setSuccess(true);
       }
