@@ -52,6 +52,30 @@ export async function loadPdfTextItems(data: ArrayBuffer | Uint8Array): Promise<
   return items;
 }
 
+const SENSITIVE_LABELS = ['ESTUDIANTE:', 'CEDULA:', 'CODIGO DE MATRICULA:', 'FECHA DE IMPRESION:'];
+
+const normalize = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+
+/**
+ * Quita del texto los datos personales del encabezado (nombre, cédula, código
+ * de matrícula) antes de enviarlo a un servicio externo: la etiqueta y los
+ * valores que la siguen en la misma línea.
+ */
+export function redactPersonalData(items: TextItem[]): TextItem[] {
+  const labels = items.filter((i) => SENSITIVE_LABELS.includes(normalize(i.text)));
+  return items.filter(
+    (item) =>
+      !labels.some(
+        (label) =>
+          item === label ||
+          ((item.page ?? 1) === (label.page ?? 1) &&
+            Math.abs(item.y - label.y) <= 5 &&
+            item.x > label.x &&
+            item.x - label.x < 400)
+      )
+  );
+}
+
 /**
  * Reconstruye líneas de texto legibles agrupando fragmentos con la misma
  * coordenada vertical. Se usa como entrada para el modelo de IA.

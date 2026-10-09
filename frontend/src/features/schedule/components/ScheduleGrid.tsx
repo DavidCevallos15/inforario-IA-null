@@ -276,7 +276,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                   Docente: {session.teacher || 'N/A'}
                 </p>
                 <div className="mt-2 inline-block px-2.5 py-0.5 bg-primary-fixed/20 text-on-primary-fixed-variant text-[10px] rounded-full font-bold">
-                  VIRTUAL
+                  {session.isVirtual ? 'VIRTUAL' : 'SIN HORARIO'}
                 </div>
               </div>
             ))}
@@ -314,7 +314,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                 <div className="flex flex-col gap-1 p-3 bg-surface-container-low rounded-xl">
                   <span className="text-[10px] text-outline uppercase font-bold tracking-wider">Horario</span>
                   <span className="text-on-surface text-base font-bold">
-                    {selected.startTime && selected.endTime ? `${selected.startTime} - ${selected.endTime}` : 'Virtual'}
+                    {selected.startTime && selected.endTime ? `${selected.startTime} - ${selected.endTime}` : selected.isVirtual ? 'Virtual' : 'Sin asignar'}
                   </span>
                 </div>
               </div>

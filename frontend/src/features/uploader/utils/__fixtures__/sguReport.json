@@ -1,0 +1,974 @@
+[
+{
+"text": "Escanee este código para",
+"x": 62,
+"y": 181,
+"page": 1
+},
+{
+"text": "veri",
+"x": 65,
+"y": 186,
+"page": 1
+},
+{
+"text": "fi",
+"x": 73,
+"y": 186,
+"page": 1
+},
+{
+"text": "car la autenticidad",
+"x": 75,
+"y": 186,
+"page": 1
+},
+{
+"text": "del documento",
+"x": 74,
+"y": 191,
+"page": 1
+},
+{
+"text": "Período:",
+"x": 140,
+"y": 119,
+"page": 1
+},
+{
+"text": "MAYO DEL 2022 HASTA SEPTIEMBRE DEL 2022",
+"x": 225,
+"y": 119,
+"page": 1
+},
+{
+"text": "Facultad:",
+"x": 140,
+"y": 136,
+"page": 1
+},
+{
+"text": "CIENCIAS INFORMÁTICAS",
+"x": 225,
+"y": 136,
+"page": 1
+},
+{
+"text": "Carrera:",
+"x": 140,
+"y": 152,
+"page": 1
+},
+{
+"text": "TECNOLOGIAS DE LA INFORMACION",
+"x": 225,
+"y": 152,
+"page": 1
+},
+{
+"text": "Malla:",
+"x": 140,
+"y": 172,
+"page": 1
+},
+{
+"text": "TECNOLOGIAS DE LA INFORMACION 2018 (REDISEÑO",
+"x": 225,
+"y": 166,
+"page": 1
+},
+{
+"text": "2019)",
+"x": 225,
+"y": 178,
+"page": 1
+},
+{
+"text": "Estudiante:",
+"x": 140,
+"y": 193,
+"page": 1
+},
+{
+"text": "PEREZ GARCIA ANA MARIA",
+"x": 225,
+"y": 193,
+"page": 1
+},
+{
+"text": "Nivel:",
+"x": 530,
+"y": 119,
+"page": 1
+},
+{
+"text": "3",
+"x": 643,
+"y": 119,
+"page": 1
+},
+{
+"text": "Código de matrícula:",
+"x": 530,
+"y": 136,
+"page": 1
+},
+{
+"text": "000",
+"x": 643,
+"y": 136,
+"page": 1
+},
+{
+"text": "Créditos tomados:",
+"x": 530,
+"y": 152,
+"page": 1
+},
+{
+"text": "15",
+"x": 643,
+"y": 152,
+"page": 1
+},
+{
+"text": "Fecha de impresión:",
+"x": 530,
+"y": 167,
+"page": 1
+},
+{
+"text": "1/1/2026 0:00:00",
+"x": 643,
+"y": 167,
+"page": 1
+},
+{
+"text": "Cédula:",
+"x": 530,
+"y": 184,
+"page": 1
+},
+{
+"text": "0000000000",
+"x": 643,
+"y": 184,
+"page": 1
+},
+{
+"text": "FISICA I (A19)",
+"x": 26,
+"y": 289,
+"page": 1
+},
+{
+"text": "2",
+"x": 229,
+"y": 289,
+"page": 1
+},
+{
+"text": "\"C\"",
+"x": 263,
+"y": 289,
+"page": 1
+},
+{
+"text": "2",
+"x": 305,
+"y": 289,
+"page": 1
+},
+{
+"text": "TORRES VERA LUCIA",
+"x": 330,
+"y": 283,
+"page": 1
+},
+{
+"text": "ESTHER",
+"x": 330,
+"y": 295,
+"page": 1
+},
+{
+"text": "—",
+"x": 441,
+"y": 289,
+"page": 1
+},
+{
+"text": "JUEVES (14:00:00-17:00:00)",
+"x": 566,
+"y": 271,
+"page": 1
+},
+{
+"text": "LUGAR:",
+"x": 594,
+"y": 283,
+"page": 1
+},
+{
+"text": "FACULTAD DE CIENCIAS BÁSICAS I",
+"x": 625,
+"y": 283,
+"page": 1
+},
+{
+"text": "(CIENCIAS BÁSICAS)",
+"x": 594,
+"y": 295,
+"page": 1
+},
+{
+"text": "COD. AMB.:",
+"x": 594,
+"y": 307,
+"page": 1
+},
+{
+"text": "1-68-2-07-A;",
+"x": 638,
+"y": 307,
+"page": 1
+},
+{
+"text": "TIPO:",
+"x": 682,
+"y": 307,
+"page": 1
+},
+{
+"text": "AULA;",
+"x": 704,
+"y": 307,
+"page": 1
+},
+{
+"text": "PISO:",
+"x": 727,
+"y": 307,
+"page": 1
+},
+{
+"text": "2;",
+"x": 749,
+"y": 307,
+"page": 1
+},
+{
+"text": "CALCULO DE VARIAS VARIABLES (A19)",
+"x": 26,
+"y": 381,
+"page": 1
+},
+{
+"text": "2",
+"x": 229,
+"y": 381,
+"page": 1
+},
+{
+"text": "\"F\"",
+"x": 264,
+"y": 381,
+"page": 1
+},
+{
+"text": "3",
+"x": 305,
+"y": 381,
+"page": 1
+},
+{
+"text": "MORA PAZ RAUL",
+"x": 330,
+"y": 375,
+"page": 1
+},
+{
+"text": "ANDRES",
+"x": 330,
+"y": 387,
+"page": 1
+},
+{
+"text": "MATEMATICAS Y",
+"x": 441,
+"y": 375,
+"page": 1
+},
+{
+"text": "ESTADISTICA",
+"x": 441,
+"y": 387,
+"page": 1
+},
+{
+"text": "LUNES (11:00:00-13:00:00)",
+"x": 566,
+"y": 339,
+"page": 1
+},
+{
+"text": "LUGAR:",
+"x": 594,
+"y": 351,
+"page": 1
+},
+{
+"text": "FILOSOFIA/POSGRADO (CIENCIAS DE",
+"x": 625,
+"y": 351,
+"page": 1
+},
+{
+"text": "LA SALUD)",
+"x": 594,
+"y": 363,
+"page": 1
+},
+{
+"text": "COD. AMB.:",
+"x": 594,
+"y": 375,
+"page": 1
+},
+{
+"text": "1-43-2-02-A;",
+"x": 638,
+"y": 375,
+"page": 1
+},
+{
+"text": "TIPO:",
+"x": 682,
+"y": 375,
+"page": 1
+},
+{
+"text": "AULA;",
+"x": 704,
+"y": 375,
+"page": 1
+},
+{
+"text": "PISO:",
+"x": 727,
+"y": 375,
+"page": 1
+},
+{
+"text": "2;",
+"x": 749,
+"y": 375,
+"page": 1
+},
+{
+"text": "MARTES (11:00:00-13:00:00)",
+"x": 566,
+"y": 387,
+"page": 1
+},
+{
+"text": "LUGAR:",
+"x": 594,
+"y": 399,
+"page": 1
+},
+{
+"text": "FILOSOFIA/POSGRADO (CIENCIAS DE",
+"x": 625,
+"y": 399,
+"page": 1
+},
+{
+"text": "LA SALUD)",
+"x": 594,
+"y": 411,
+"page": 1
+},
+{
+"text": "COD. AMB.:",
+"x": 594,
+"y": 423,
+"page": 1
+},
+{
+"text": "1-43-2-02-A;",
+"x": 638,
+"y": 423,
+"page": 1
+},
+{
+"text": "TIPO:",
+"x": 682,
+"y": 423,
+"page": 1
+},
+{
+"text": "AULA;",
+"x": 704,
+"y": 423,
+"page": 1
+},
+{
+"text": "PISO:",
+"x": 727,
+"y": 423,
+"page": 1
+},
+{
+"text": "2;",
+"x": 749,
+"y": 423,
+"page": 1
+},
+{
+"text": "ESTRUCTURAS DE DATOS (A19)",
+"x": 26,
+"y": 479,
+"page": 1
+},
+{
+"text": "3",
+"x": 229,
+"y": 479,
+"page": 1
+},
+{
+"text": "\"A\"",
+"x": 263,
+"y": 479,
+"page": 1
+},
+{
+"text": "3",
+"x": 305,
+"y": 479,
+"page": 1
+},
+{
+"text": "RIOS CANO PEDRO",
+"x": 330,
+"y": 474,
+"page": 1
+},
+{
+"text": "PABLO",
+"x": 330,
+"y": 486,
+"page": 1
+},
+{
+"text": "—",
+"x": 441,
+"y": 479,
+"page": 1
+},
+{
+"text": "JUEVES (07:00:00-11:00:00)",
+"x": 566,
+"y": 455,
+"page": 1
+},
+{
+"text": "LUGAR:",
+"x": 594,
+"y": 467,
+"page": 1
+},
+{
+"text": "FACULTAD DE CIENCIAS",
+"x": 625,
+"y": 467,
+"page": 1
+},
+{
+"text": "INFORMÁTICAS (CIENCIAS INFORMÁTICAS)",
+"x": 594,
+"y": 479,
+"page": 1
+},
+{
+"text": "COD. AMB.:",
+"x": 594,
+"y": 491,
+"page": 1
+},
+{
+"text": "1-59-2-04-LC;",
+"x": 638,
+"y": 491,
+"page": 1
+},
+{
+"text": "TIPO:",
+"x": 686,
+"y": 491,
+"page": 1
+},
+{
+"text": "LABORATORIO",
+"x": 708,
+"y": 491,
+"page": 1
+},
+{
+"text": "DE COMPUTACION;",
+"x": 594,
+"y": 503,
+"page": 1
+},
+{
+"text": "PISO:",
+"x": 666,
+"y": 503,
+"page": 1
+},
+{
+"text": "2;",
+"x": 689,
+"y": 503,
+"page": 1
+},
+{
+"text": "HORARIO",
+"x": 657,
+"y": 67,
+"page": 1
+},
+{
+"text": "DE",
+"x": 746,
+"y": 67,
+"page": 1
+},
+{
+"text": "CLA",
+"x": 694,
+"y": 88,
+"page": 1
+},
+{
+"text": "S",
+"x": 733,
+"y": 88,
+"page": 1
+},
+{
+"text": "E",
+"x": 745,
+"y": 88,
+"page": 1
+},
+{
+"text": "S",
+"x": 758,
+"y": 88,
+"page": 1
+},
+{
+"text": "ASIGNATURA",
+"x": 92,
+"y": 240,
+"page": 1
+},
+{
+"text": "NIVEL",
+"x": 220,
+"y": 240,
+"page": 1
+},
+{
+"text": "PARAL.",
+"x": 256,
+"y": 240,
+"page": 1
+},
+{
+"text": "CREDI.",
+"x": 295,
+"y": 240,
+"page": 1
+},
+{
+"text": "DOCENTE",
+"x": 363,
+"y": 240,
+"page": 1
+},
+{
+"text": "DEPARTAMENTO",
+"x": 453,
+"y": 234,
+"page": 1
+},
+{
+"text": "DOCENTE",
+"x": 466,
+"y": 246,
+"page": 1
+},
+{
+"text": "HORARIO Y AMBIENTE",
+"x": 609,
+"y": 240,
+"page": 1
+},
+{
+"text": "Sistema de Gestión Académica - UTM 1 de 2",
+"x": 658,
+"y": 550,
+"page": 1
+},
+{
+"text": "INSTALACIONES ELECTRICAS Y DE CABLEADO",
+"x": 26,
+"y": 119,
+"page": 2
+},
+{
+"text": "ESTRUCTURADO (A19)",
+"x": 26,
+"y": 131,
+"page": 2
+},
+{
+"text": "3",
+"x": 229,
+"y": 124,
+"page": 2
+},
+{
+"text": "\"A\"",
+"x": 263,
+"y": 124,
+"page": 2
+},
+{
+"text": "4",
+"x": 305,
+"y": 124,
+"page": 2
+},
+{
+"text": "LEON BRAVO MARIO",
+"x": 330,
+"y": 119,
+"page": 2
+},
+{
+"text": "JOSE",
+"x": 330,
+"y": 131,
+"page": 2
+},
+{
+"text": "TECNOLOGÍAS DE LA",
+"x": 441,
+"y": 112,
+"page": 2
+},
+{
+"text": "INFORMACIÓN Y",
+"x": 441,
+"y": 124,
+"page": 2
+},
+{
+"text": "COMUNICACIÓN",
+"x": 441,
+"y": 136,
+"page": 2
+},
+{
+"text": "LUNES (08:00:00-11:00:00)",
+"x": 566,
+"y": 76,
+"page": 2
+},
+{
+"text": "LUGAR:",
+"x": 594,
+"y": 88,
+"page": 2
+},
+{
+"text": "FACULTAD DE CIENCIAS",
+"x": 625,
+"y": 88,
+"page": 2
+},
+{
+"text": "INFORMÁTICAS (CIENCIAS INFORMÁTICAS)",
+"x": 594,
+"y": 100,
+"page": 2
+},
+{
+"text": "COD. AMB.:",
+"x": 594,
+"y": 112,
+"page": 2
+},
+{
+"text": "1-59-3-02-A;",
+"x": 638,
+"y": 112,
+"page": 2
+},
+{
+"text": "TIPO:",
+"x": 682,
+"y": 112,
+"page": 2
+},
+{
+"text": "AULA;",
+"x": 704,
+"y": 112,
+"page": 2
+},
+{
+"text": "PISO:",
+"x": 727,
+"y": 112,
+"page": 2
+},
+{
+"text": "3;",
+"x": 749,
+"y": 112,
+"page": 2
+},
+{
+"text": "MARTES (08:00:00-10:00:00)",
+"x": 566,
+"y": 124,
+"page": 2
+},
+{
+"text": "LUGAR:",
+"x": 594,
+"y": 136,
+"page": 2
+},
+{
+"text": "FACULTAD DE CIENCIAS",
+"x": 625,
+"y": 136,
+"page": 2
+},
+{
+"text": "INFORMÁTICAS (CIENCIAS INFORMÁTICAS)",
+"x": 594,
+"y": 148,
+"page": 2
+},
+{
+"text": "COD. AMB.:",
+"x": 594,
+"y": 160,
+"page": 2
+},
+{
+"text": "1-59-1-02-LC;",
+"x": 638,
+"y": 160,
+"page": 2
+},
+{
+"text": "TIPO:",
+"x": 686,
+"y": 160,
+"page": 2
+},
+{
+"text": "LABORATORIO",
+"x": 708,
+"y": 160,
+"page": 2
+},
+{
+"text": "DE COMPUTACION;",
+"x": 594,
+"y": 172,
+"page": 2
+},
+{
+"text": "PISO:",
+"x": 666,
+"y": 172,
+"page": 2
+},
+{
+"text": "1;",
+"x": 689,
+"y": 172,
+"page": 2
+},
+{
+"text": "ESTADISTICA (A19)",
+"x": 26,
+"y": 203,
+"page": 2
+},
+{
+"text": "3",
+"x": 229,
+"y": 203,
+"page": 2
+},
+{
+"text": "\"N\"",
+"x": 263,
+"y": 203,
+"page": 2
+},
+{
+"text": "3",
+"x": 305,
+"y": 203,
+"page": 2
+},
+{
+"text": "SOLIS VEGA ROSA",
+"x": 330,
+"y": 197,
+"page": 2
+},
+{
+"text": "ELENA",
+"x": 330,
+"y": 209,
+"page": 2
+},
+{
+"text": "—",
+"x": 441,
+"y": 203,
+"page": 2
+},
+{
+"text": "- HORARIO NO ASIGNADO.",
+"x": 538,
+"y": 203,
+"page": 2
+},
+{
+"text": "APROBADO",
+"x": 203,
+"y": 263,
+"page": 2
+},
+{
+"text": "PARALELO QUE CUMPLE CON EL MÍNIMO DE ESTUDIANTES INSCRITOS.",
+"x": 288,
+"y": 263,
+"page": 2
+},
+{
+"text": "PENDIENTE",
+"x": 203,
+"y": 288,
+"page": 2
+},
+{
+"text": "PARALELO QUE ACTUALMENTE NO CUMPLE CON EL MÍNIMO DE ESTUDIANTES",
+"x": 288,
+"y": 282,
+"page": 2
+},
+{
+"text": "INSCRITOS. EL ESTADO CAMBIARÁ UNA VEZ QUE CUMPLA CON EL MÍNIMO.",
+"x": 288,
+"y": 295,
+"page": 2
+},
+{
+"text": "NOTA",
+"x": 216,
+"y": 320,
+"page": 2
+},
+{
+"text": "AQUELLOS PARALELOS QUE NO CUMPLAN CON EL MÍNIMO DE ESTUDIANTES",
+"x": 288,
+"y": 313,
+"page": 2
+},
+{
+"text": "INSCRITOS SERÁN CERRADOS.",
+"x": 288,
+"y": 327,
+"page": 2
+},
+{
+"text": "ASIGNATURA",
+"x": 92,
+"y": 45,
+"page": 2
+},
+{
+"text": "NIVEL",
+"x": 220,
+"y": 45,
+"page": 2
+},
+{
+"text": "PARAL.",
+"x": 256,
+"y": 45,
+"page": 2
+},
+{
+"text": "CREDI.",
+"x": 295,
+"y": 45,
+"page": 2
+},
+{
+"text": "DOCENTE",
+"x": 363,
+"y": 45,
+"page": 2
+},
+{
+"text": "DEPARTAMENTO",
+"x": 453,
+"y": 40,
+"page": 2
+},
+{
+"text": "DOCENTE",
+"x": 466,
+"y": 52,
+"page": 2
+},
+{
+"text": "HORARIO Y AMBIENTE",
+"x": 609,
+"y": 45,
+"page": 2
+},
+{
+"text": "LEYENDA",
+"x": 208,
+"y": 244,
+"page": 2
+},
+{
+"text": "DESCRIPCIÓN",
+"x": 422,
+"y": 244,
+"page": 2
+},
+{
+"text": "Sistema de Gestión Académica - UTM 2 de 2",
+"x": 658,
+"y": 550,
+"page": 2
+}
+]

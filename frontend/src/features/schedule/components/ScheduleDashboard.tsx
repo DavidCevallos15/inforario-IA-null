@@ -505,7 +505,8 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
         }
 
         if (session.location) {
-          doc.text(session.location, textX, textY);
+          // La ubicación incluye el edificio: puede necesitar varias líneas
+          doc.text(doc.splitTextToSize(session.location, dayColWidth - 5), textX, textY);
         }
       });
 
@@ -514,7 +515,7 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
         doc.setFont(style.font, 'bold');
         doc.setFontSize(11 * fontScale * exportScale);
         doc.setTextColor(style.textMain[0], style.textMain[1], style.textMain[2]);
-        doc.text('Materias Virtuales / Asincrónicas', startX, sectionStartY);
+        doc.text('Materias Virtuales / Sin Horario Fijo', startX, sectionStartY);
 
         const virtualGap = 4;
         const virtualCardWidth = (usableWidth - virtualGap * (virtualColumns - 1)) / virtualColumns;
@@ -555,7 +556,7 @@ export const ScheduleDashboard: React.FC<ScheduleDashboardProps> = ({
           doc.setFont(style.font, 'normal');
           doc.setFontSize(virtualDetailFontSize);
           doc.text(
-            `Docente: ${session.teacher || 'N/A'} · Modalidad: ${session.location || 'Virtual'}`,
+            `Docente: ${session.teacher || 'N/A'} · ${session.isVirtual ? 'Modalidad: Virtual' : session.location || 'Sin horario'}`,
             cardX + 3,
             infoY
           );
