@@ -1,13 +1,14 @@
 import React from 'react';
 import { Sparkles, User, MessageCircle } from 'lucide-react';
-import { AppView, Schedule } from '../../types';
+import type { User as AuthUser } from '@supabase/supabase-js';
+import { AppView, Schedule, UserProfile } from '../../types';
 
 interface NavbarProps {
   currentView: AppView;
   onNavigate: (view: AppView) => void;
   currentSchedule: Schedule | null;
-  sessionUser: any;
-  userProfile: any;
+  sessionUser: AuthUser | null;
+  userProfile: UserProfile | null;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({

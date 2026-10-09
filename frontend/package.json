@@ -6,32 +6,41 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "start:supa": "cd ../backend && supabase start",
     "dev:web": "concurrently --names \"FUNC,VITE\" -c \"bgMagenta,bgCyan\" \"cd ../backend && supabase functions serve extract-schedule --env-file ./supabase/functions/extract-schedule/.env\" \"vite\""
   },
   "dependencies": {
-    "@react-three/drei": "^10.7.7",
-    "@react-three/fiber": "^9.4.2",
     "@supabase/supabase-js": "^2.103.3",
-    "clsx": "^2.1.1",
     "framer-motion": "^11.0.24",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.554.0",
     "pdfjs-dist": "^4.10.38",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "simplex-noise": "^4.0.1",
-    "tailwind-merge": "^2.3.0",
-    "tesseract.js": "^5.1.1",
-    "three": "^0.181.2"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@types/gapi": "^0.0.47",
-    "@types/gapi.calendar": "^3.0.11",
+    "@eslint/js": "^9.39.5",
     "@types/node": "^22.14.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "autoprefixer": "^10.6.1",
     "concurrently": "^9.2.1",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "globals": "^17.13.0",
+    "postcss": "^8.5.29",
+    "tailwindcss": "^3.4.19",
+    "tailwindcss-animate": "^1.0.7",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "typescript-eslint": "^8.71.1",
+    "vite": "^6.2.0",
+    "vitest": "^3.2.7"
   }
 }

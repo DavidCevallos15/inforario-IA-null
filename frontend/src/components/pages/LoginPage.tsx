@@ -108,29 +108,32 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onBack }) => {
        return;
     }
 
+    // Normalizar: los correos no distinguen mayúsculas y suelen pegarse con espacios
+    const normalizedEmail = email.trim().toLowerCase();
+
     try {
       if (view === 'LOGIN') {
-        if (!email.endsWith('@utm.edu.ec')) {
+        if (!normalizedEmail.endsWith('@utm.edu.ec')) {
           throw new Error("Debes usar tu correo institucional (@utm.edu.ec) para iniciar sesión.");
         }
-        await signInWithEmail(email, password);
+        await signInWithEmail(normalizedEmail, password);
         onLogin(); // App.tsx listener will handle session update
       } else if (view === 'REGISTER') {
-        if (!email.endsWith('@utm.edu.ec')) {
+        if (!normalizedEmail.endsWith('@utm.edu.ec')) {
           throw new Error("El registro es exclusivo para correos institucionales de la UTM (@utm.edu.ec).");
         }
         if (!isPasswordValid) {
           throw new Error("La contraseña no cumple con los requisitos.");
         }
-        await signUpWithEmail(email, password, fullName);
+        await signUpWithEmail(normalizedEmail, password, fullName.trim());
         setSuccessMsg("¡Cuenta creada! Revisa tu correo para confirmar.");
       } else if (view === 'FORGOT_PASSWORD') {
-        await resetPasswordForEmail(email);
+        await resetPasswordForEmail(normalizedEmail);
         setSuccessMsg("Si el correo existe, recibirás un enlace de recuperación.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      const msg = err?.message || "";
+      const msg = err instanceof Error ? err.message : "";
       if (msg.includes("User already registered")) {
         setError("Este correo ya está registrado. Por favor, inicia sesión.");
       } else if (msg.includes("Invalid login")) {

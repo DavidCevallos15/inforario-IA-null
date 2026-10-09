@@ -1,4 +1,4 @@
-import { Schedule, ClassSession } from '../../types';
+import { Schedule } from '../../types';
 
 const DAY_TO_ICS_DAY: Record<string, string> = {
   'Lunes': 'MO',
@@ -41,7 +41,44 @@ function getFirstOccurrence(startDate: Date, dayName: string, startTime: string)
   return start;
 }
 
-export function generateICS(schedule: Schedule, semesterStart: Date, semesterEnd: Date): void {
+/** Escapa texto según RFC 5545 §3.3.11 (barra invertida, ; , y saltos de línea). */
+export function escapeICSText(value: string): string {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n');
+}
+
+/** Pliega líneas de más de 75 octetos (RFC 5545 §3.1) sin partir caracteres UTF-8. */
+export function foldICSLine(line: string): string {
+  const encoder = new TextEncoder();
+  if (encoder.encode(line).length <= 75) return line;
+
+  const parts: string[] = [];
+  let current = '';
+  let currentBytes = 0;
+  for (const char of line) {
+    const charBytes = encoder.encode(char).length;
+    // La primera línea admite 75 octetos; las de continuación, 74 + el espacio inicial
+    const limit = parts.length === 0 ? 75 : 74;
+    if (currentBytes + charBytes > limit) {
+      parts.push(current);
+      current = '';
+      currentBytes = 0;
+    }
+    current += char;
+    currentBytes += charBytes;
+  }
+  parts.push(current);
+  return parts.join('\r\n ');
+}
+
+const formatUTCStamp = (date: Date): string =>
+  date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+
+/** Construye el contenido .ics (función pura, testeable). */
+export function buildICS(schedule: Schedule, semesterStart: Date, semesterEnd: Date, now: Date = new Date()): string {
   const vcalendar = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -50,53 +87,44 @@ export function generateICS(schedule: Schedule, semesterStart: Date, semesterEnd
     'METHOD:PUBLISH'
   ];
 
-  // UNTIL requires UTC format YYYYMMDDTHHMMSSZ for safety
+  // UNTIL en UTC (YYYYMMDDTHHMMSSZ)
   const untilDateStr = `${semesterEnd.getUTCFullYear()}${String(semesterEnd.getUTCMonth()+1).padStart(2,'0')}${String(semesterEnd.getUTCDate()).padStart(2,'0')}T235959Z`;
+  const dtStamp = formatUTCStamp(now);
 
   schedule.sessions.forEach(session => {
-    // Skip virtual or unassigned classes with no real times
+    // Omitir clases virtuales o sin horario real
     if (!session.day || !session.startTime || !session.endTime || session.isVirtual) {
-      return; 
+      return;
     }
 
-    // Determine exact first start/end dates
     const firstStart = getFirstOccurrence(semesterStart, session.day, session.startTime);
     const firstEnd = getFirstOccurrence(semesterStart, session.day, session.endTime);
-
-    // Format strings
-    const dtStart = formatICSDate(firstStart);
-    const dtEnd = formatICSDate(firstEnd);
-    
     const byday = DAY_TO_ICS_DAY[session.day] || 'MO';
-    const rule = `FREQ=WEEKLY;UNTIL=${untilDateStr};BYDAY=${byday}`;
-
-    // Random UID
-    const uid = `${crypto.randomUUID()}@inforario.utm`;
-    // Add Z for current stamp UTC
-    const now = new Date();
-    const dtStamp = `${now.getUTCFullYear()}${String(now.getUTCMonth()+1).padStart(2,'0')}${String(now.getUTCDate()).padStart(2,'0')}T${String(now.getUTCHours()).padStart(2,'0')}0000Z`;
 
     vcalendar.push(
       'BEGIN:VEVENT',
-      `UID:${uid}`,
+      `UID:${crypto.randomUUID()}@inforario.utm`,
       `DTSTAMP:${dtStamp}`,
-      `DTSTART:${dtStart}`,
-      `DTEND:${dtEnd}`,
-      `RRULE:${rule}`,
-      `SUMMARY:${session.subject}`,
-      `LOCATION:${session.location}`,
-      `DESCRIPTION:Docente: ${session.teacher}\\nSGU Inforario UTM`,
+      `DTSTART:${formatICSDate(firstStart)}`,
+      `DTEND:${formatICSDate(firstEnd)}`,
+      `RRULE:FREQ=WEEKLY;UNTIL=${untilDateStr};BYDAY=${byday}`,
+      `SUMMARY:${escapeICSText(session.subject)}`,
+      `LOCATION:${escapeICSText(session.location)}`,
+      `DESCRIPTION:${escapeICSText(`Docente: ${session.teacher}\nSGU Inforario UTM`)}`,
       'END:VEVENT'
     );
   });
 
   vcalendar.push('END:VCALENDAR');
+  return vcalendar.map(foldICSLine).join('\r\n') + '\r\n';
+}
 
-  const blob = new Blob([vcalendar.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+export function generateICS(schedule: Schedule, semesterStart: Date, semesterEnd: Date): void {
+  const blob = new Blob([buildICS(schedule, semesterStart, semesterEnd)], { type: 'text/calendar;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  
+
   const cleanPeriod = (schedule.academic_period || 'horario').replace(/\s+/g, '_');
   a.download = `horario_${cleanPeriod}.ics`;
   document.body.appendChild(a);

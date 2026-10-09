@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Schedule, DAYS, ClassSession } from '../../../types';
 import { AlertTriangle, Clock, MapPin, User, ChevronRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { Modal } from '../../../components/ui/Modal';
@@ -224,7 +224,7 @@ export const ScheduleList: React.FC<ScheduleListProps> = ({ schedule, onResolveC
                   }}
                   className="flex-1 text-sm py-3"
                 >
-                  Resolver Conflicto
+                  Quitar del horario
                 </Button>
               )}
               <Button

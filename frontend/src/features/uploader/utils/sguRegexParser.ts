@@ -1,9 +1,10 @@
-import { ClassSession } from "../../../types";
+import { ClassSession, DAYS } from "../../../types";
+import { TextItem } from "./pdfText";
 
 // ------------------------------------------------------------------
 // INTERFACES
 // ------------------------------------------------------------------
-interface ParseResult {
+export interface ParseResult {
   sessions: ClassSession[];
   faculty?: string;
   academic_period?: string;
@@ -11,15 +12,8 @@ interface ParseResult {
   career?: string;
 }
 
-interface TextItem {
-  text: string;
-  x: number;
-  y: number;
-  page?: number;
-}
-
 // ------------------------------------------------------------------
-// DAY DETECTION MAP (español → inglés)
+// DAY DETECTION MAP (texto normalizado → DayOfWeek)
 // ------------------------------------------------------------------
 const DAY_MAP: Record<string, 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes'> = {
   'lunes': 'Lunes',
@@ -30,6 +24,18 @@ const DAY_MAP: Record<string, 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Vi
 };
 
 const SUBJECT_COLORS = ['#22C55E', '#3B82F6', '#F97316', '#EF4444', '#A855F7', '#06B6D4', '#EAB308'];
+
+/**
+ * Asigna un color estable por materia a las sesiones que aún no tienen uno
+ * (p. ej. las devueltas por la IA). Respeta los colores ya existentes.
+ */
+export function assignSubjectColors(sessions: ClassSession[]): ClassSession[] {
+  const subjectColors = new Map<string, string>();
+  for (const s of sessions) {
+    if (s.color) subjectColors.set(s.subject.trim().toUpperCase(), s.color);
+  }
+  return sessions.map((s) => (s.color ? s : { ...s, color: getSubjectColor(s.subject, subjectColors) }));
+}
 
 const getSubjectColor = (subject: string, subjectColors: Map<string, string>) => {
   const key = subject.trim().toUpperCase();
@@ -43,9 +49,10 @@ const getSubjectColor = (subject: string, subjectColors: Map<string, string>) =>
 // ------------------------------------------------------------------
 // NORMALIZACIÓN DE NOMBRES DE DOCENTES
 // ------------------------------------------------------------------
-const TITLE_PREFIXES = /\b(ing|lic|dr|dra|msc|mgtr|phd|abg|arq|econ|prof|sr|sra|srta)\.?\s*/gi;
+// El título debe terminar en punto o fin de palabra: evita recortar apellidos como "DRAGO" o nombres como "INGRID"
+const TITLE_PREFIXES = /\b(ing|lic|dra|dr|msc|mgtr|phd|abg|arq|econ|prof|srta|sra|sr)(?:\.|\b)\s*/gi;
 
-function normalizeTeacherName(rawName: string): string {
+export function normalizeTeacherName(rawName: string): string {
   if (!rawName || rawName.trim().length === 0) return 'Sin asignar';
   
   let name = rawName.trim();
@@ -86,7 +93,7 @@ function capitalize(str: string): string {
 // UTM format: "1-59-PISO-AULA-TIPO" 
 // Example: "1-59-2-04-A" → "Aula 204 - Piso 2"
 // Example: "1-59-3-06-LC" → "Lab. Computación 306 - Piso 3"
-function normalizeLocation(codAmb: string, tipo?: string): string {
+export function normalizeLocation(codAmb: string, tipo?: string): string {
   if (!codAmb || codAmb.trim() === '') return 'Sin asignar';
   
   const match = codAmb.match(/\d+-\d+-(\d+)-(\d+)-?([\w]*)/);
@@ -115,7 +122,7 @@ function normalizeLocation(codAmb: string, tipo?: string): string {
 // ------------------------------------------------------------------
 // DETECCIÓN DE PERÍODOS ACADÉMICOS
 // ------------------------------------------------------------------
-function normalizeAcademicPeriod(raw: string): string {
+export function normalizeAcademicPeriod(raw: string): string {
   if (!raw) return '';
   
   // Input: "ABRIL DE 2026 HASTA AGOSTO DE 2026"
@@ -132,52 +139,11 @@ function normalizeAcademicPeriod(raw: string): string {
 // PDF PARSING PRINCIPAL — Diseñado para SGA UTM
 // ------------------------------------------------------------------
 
-async function parsePDF(base64Data: string): Promise<ParseResult> {
-  const pdfjsLib = await import('pdfjs-dist');
-  
-  // Configure worker — use CDN in browser, disable in Node.js for testing
-  const isBrowser = typeof window !== 'undefined';
-  if (isBrowser) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-  }
-  
-  // Decode base64 to Uint8Array
-  const binaryString = typeof atob !== 'undefined' 
-    ? atob(base64Data) 
-    : Buffer.from(base64Data, 'base64').toString('binary');
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  
-  const loadingTask = pdfjsLib.getDocument({ data: bytes });
-  const pdf = await loadingTask.promise;
-  
-  // Collect all text items from all pages
-  const allItems: TextItem[] = [];
-  
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum);
-    const textContent = await page.getTextContent();
-    const viewport = page.getViewport({ scale: 1.0 });
-    
-    for (const item of textContent.items) {
-      if ('str' in item && item.str.trim()) {
-        const tx = item.transform;
-        allItems.push({
-          text: item.str.trim(),
-          x: Math.round(tx[4]),
-          y: Math.round(viewport.height - tx[5]),
-          page: pageNum,
-        });
-      }
-    }
-  }
-  
-  if (allItems.length === 0) {
-    throw new Error('No se pudo extraer texto del PDF. El archivo puede estar corrupto o ser un escaneo.');
-  }
-  
+/**
+ * Interpreta los fragmentos posicionales de un reporte de horarios del SGU.
+ * Es una función pura (sin pdf.js) para poder probarla con datos sintéticos.
+ */
+export function parseSguTextItems(allItems: TextItem[]): ParseResult {
   // 1. EXTRAER METADATOS DEL ENCABEZADO
   const metadata = extractMetadata(allItems);
   
@@ -200,7 +166,7 @@ async function parsePDF(base64Data: string): Promise<ParseResult> {
 // ------------------------------------------------------------------
 // EXTRACT METADATA FROM HEADER
 // ------------------------------------------------------------------
-interface Metadata {
+export interface Metadata {
   faculty?: string;
   academicPeriod?: string;
   studentName?: string;
@@ -208,7 +174,7 @@ interface Metadata {
   level?: string;
 }
 
-function extractMetadata(items: TextItem[]): Metadata {
+export function extractMetadata(items: TextItem[]): Metadata {
   const result: Metadata = {};
   
   // Header items are in the top portion of page 1 (y < 210)
@@ -300,7 +266,7 @@ function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[
       y: number;
       items: TextItem[];
       name?: string;
-      docenteItems?: TextItem[];
+      docenteItems: TextItem[];
       teacher?: string;
     }
     
@@ -313,7 +279,8 @@ function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[
       } else {
         subjects.push({
           y: item.y,
-          items: [item]
+          items: [item],
+          docenteItems: [],
         });
       }
     }
@@ -341,9 +308,6 @@ function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[
       !footerTexts.some(ft => i.text.includes(ft))
     );
     
-    for (const sub of subjects) {
-      sub.docenteItems = [];
-    }
     for (const item of docenteItems) {
       let closestSub: TempSubject | null = null;
       let minDistance = Infinity;
@@ -360,7 +324,7 @@ function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[
     }
     
     for (const sub of subjects) {
-      const rawTeacher = (sub.docenteItems || [])
+      const rawTeacher = sub.docenteItems
         .sort((a, b) => a.y - b.y)
         .map(i => i.text)
         .join(' ');
@@ -513,170 +477,42 @@ function extractSubjectBlocks(items: TextItem[], faculty: string): ClassSession[
 }
 
 // ------------------------------------------------------------------
-// IMAGE PARSING con Tesseract.js (OCR) — fallback
-// ------------------------------------------------------------------
-async function parseImage(base64Data: string, mimeType: string): Promise<ParseResult> {
-  const Tesseract = await import('tesseract.js');
-  const imageDataUrl = `data:${mimeType};base64,${base64Data}`;
-  
-  const result = await Tesseract.recognize(imageDataUrl, 'spa', {
-    logger: (m: any) => {
-      if (m.status === 'recognizing text') {
-        console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
-      }
-    }
-  });
-  
-  const text = result.data.text;
-  
-  if (!text || text.trim().length < 20) {
-    throw new Error('No se pudo extraer texto de la imagen. Asegúrate de que sea legible y contenga un horario válido.');
-  }
-  
-  return parseRawText(text);
-}
-
-// ------------------------------------------------------------------
-// PARSE RAW TEXT (fallback for OCR or other text sources)
-// ------------------------------------------------------------------
-function parseRawText(text: string): ParseResult {
-  const sessions: ClassSession[] = [];
-  const subjectColors = new Map<string, string>();
-  let faculty: string | undefined;
-  let academicPeriod: string | undefined;
-  
-  const facultyMatch = text.match(/FACULTAD:\s*(.+)/i);
-  if (facultyMatch) faculty = `FACULTAD DE ${facultyMatch[1].trim().toUpperCase()}`;
-  
-  const periodoMatch = text.match(/PERIODO:\s*(.+)/i);
-  if (periodoMatch) academicPeriod = normalizeAcademicPeriod(periodoMatch[1].trim());
-  
-  const lines = text.split('\n');
-  
-  let currentSubject = '';
-  let currentDocente = '';
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    
-    const dayTimeMatch = line.match(/(?:-\s*)?\b(LUNES|MARTES|MI[EÉ]RCOLES|JUEVES|VIERNES)\b\s*\((\d{1,2}):(\d{2}):\d{2}-(\d{1,2}):(\d{2}):\d{2}\)/i);
-    
-    if (dayTimeMatch) {
-      const dayName = dayTimeMatch[1].toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      const day = DAY_MAP[dayName];
-      
-      if (day && currentSubject) {
-        const subjectColor = getSubjectColor(currentSubject, subjectColors);
-        let location = 'Sin asignar';
-        for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
-          const codMatch = lines[j].match(/COD\.\s*AMB\.?:?\s*(\S+)/i);
-          const tipoMatch = lines[j].match(/TIPO:\s*([^;]+)/i);
-          if (codMatch) {
-            location = normalizeLocation(codMatch[1].replace(/;$/, ''), tipoMatch?.[1]?.trim());
-            break;
-          }
-        }
-        
-        sessions.push({
-          id: crypto.randomUUID(),
-          subject: currentSubject,
-          day,
-          startTime: `${dayTimeMatch[2].padStart(2, '0')}:${dayTimeMatch[3]}`,
-          endTime: `${dayTimeMatch[4].padStart(2, '0')}:${dayTimeMatch[5]}`,
-          teacher: currentDocente || 'Sin asignar',
-          subject_faculty: faculty,
-          location,
-          floor: (location.match(/Piso\s*(\d+)/i)?.[1]) || 'N/A',
-          isVirtual: /MATERIA\s+VIRTUAL/i.test(location),
-          conflict: false,
-          color: subjectColor,
-        });
-      }
-    }
-    
-    if (line.length > 10 && /^[A-ZÁÉÍÓÚÜÑ\s()]+$/.test(line) && !line.includes('LUGAR:') && !line.includes('COD.') && !line.includes('LEYENDA')) {
-      if (!line.includes('LUNES') && !line.includes('MARTES') && !line.includes('JUEVES') && !line.includes('VIERNES')) {
-        currentSubject = line
-          .replace(/\s*\([A-Z0-9\s-]+\)\s*/gi, '')
-          .replace(/^(TECNOLOG[IÍ]AS DE LA\s*)+/i, '')
-          .trim();
-      }
-    }
-  }
-  
-  return { sessions: resolveConflicts(sessions), faculty, academic_period: academicPeriod };
-}
-
-// ------------------------------------------------------------------
 // RESOLUCIÓN DE CONFLICTOS DE HORARIO (No destructivo)
 // ------------------------------------------------------------------
 export function resolveConflicts(sessions: ClassSession[]): ClassSession[] {
-  if (sessions.length <= 1) return sessions;
+  const timeToMins = (time: string) => {
+    const [h, m] = time.split(':').map(Number);
+    return h * 60 + m;
+  };
 
-  const schedulable = sessions.filter((s) => s.day && s.startTime && s.endTime);
-  const unscheduled = sessions.filter((s) => !s.day || !s.startTime || !s.endTime);
-  
-  // Reset conflicts
-  for (const s of sessions) {
-    s.conflict = false;
-  }
-  
-  // Sort by start time so we predictably evaluate conflicts
+  // Copias para no mutar el arreglo recibido (puede venir del estado de React)
+  const copies = sessions.map((s) => ({ ...s, conflict: false }));
+  const schedulable = copies.filter((s) => !s.isVirtual && s.day && s.startTime && s.endTime);
+  const unscheduled = copies.filter((s) => s.isVirtual || !s.day || !s.startTime || !s.endTime);
+
+  // Orden cronológico real (Lunes → Viernes), no alfabético
   schedulable.sort((a, b) => {
-    if (a.day !== b.day) return (a.day || '').localeCompare(b.day || '');
-    return (a.startTime || '').localeCompare(b.startTime || '');
+    if (a.day !== b.day) return DAYS.indexOf(a.day!) - DAYS.indexOf(b.day!);
+    return a.startTime!.localeCompare(b.startTime!);
   });
-  
+
   for (let i = 0; i < schedulable.length; i++) {
     for (let j = i + 1; j < schedulable.length; j++) {
       const s1 = schedulable[i];
       const s2 = schedulable[j];
-      
-      if (s1.day === s2.day) {
-        const timeToMins = (time: string) => {
-          const [h, m] = time.split(':').map(Number);
-          return h * 60 + m;
-        };
-        
-        const start1 = timeToMins(s1.startTime || '00:00');
-        const end1 = timeToMins(s1.endTime || '00:00');
-        const start2 = timeToMins(s2.startTime || '00:00');
-        const end2 = timeToMins(s2.endTime || '00:00');
-        
-        // Detect overlap
-        if (start1 < end2 && start2 < end1) {
-          s1.conflict = true;
-          s2.conflict = true;
-        }
+      if (s1.day !== s2.day) continue;
+
+      const start1 = timeToMins(s1.startTime!);
+      const end1 = timeToMins(s1.endTime!);
+      const start2 = timeToMins(s2.startTime!);
+      const end2 = timeToMins(s2.endTime!);
+
+      if (start1 < end2 && start2 < end1) {
+        s1.conflict = true;
+        s2.conflict = true;
       }
     }
   }
-  
+
   return [...schedulable, ...unscheduled];
 }
-
-// ------------------------------------------------------------------
-// FUNCIÓN PRINCIPAL EXPORTADA
-// ------------------------------------------------------------------
-export const parseScheduleFile = async (base64Data: string, mimeType: string): Promise<ParseResult> => {
-  const cleanBase64 = base64Data.replace(/^data:(.*);base64,/, "");
-  
-  try {
-    if (mimeType === 'application/pdf') {
-      return await parsePDF(cleanBase64);
-    } else if (mimeType.startsWith('image/')) {
-      return await parseImage(cleanBase64, mimeType);
-    } else {
-      throw new Error(`Tipo de archivo no soportado: ${mimeType}`);
-    }
-  } catch (error: any) {
-    console.error("Schedule Parse Error:", error);
-    
-    if (error.message?.includes('No se pudo') || error.message?.includes('Tipo de archivo')) {
-      throw error;
-    }
-    
-    throw new Error("Error al analizar el horario. Por favor asegúrate de que el archivo sea legible y contenga un horario válido.");
-  }
-};

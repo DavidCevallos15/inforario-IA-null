@@ -1,12 +1,39 @@
 import { useState } from 'react';
-import { Schedule } from '../../../types';
-import { parseScheduleFileWithEdge, saveScheduleToDB } from '../../../services/supabase/supabaseClient';
-import { parseScheduleFile } from '../utils/sguRegexParser';
+import { ClassSession, Schedule } from '../../../types';
+import { extractScheduleWithAI, saveScheduleToDB } from '../../../services/supabase/supabaseClient';
+import { assignSubjectColors, parseSguTextItems, ParseResult, resolveConflicts } from '../utils/sguRegexParser';
+import { loadPdfTextItems, textItemsToPlainText } from '../utils/pdfText';
 
 interface UseScheduleUploadProps {
   deviceId: string | null;
   onSuccess: (schedule: Schedule) => void;
 }
+
+/**
+ * PDF: se extrae el texto una sola vez. La IA obtiene las sesiones (con el
+ * parser local como respaldo) y los metadatos del encabezado (facultad,
+ * período) siempre se leen localmente, porque la IA no los devuelve.
+ */
+const parsePdfSchedule = async (file: File): Promise<ParseResult> => {
+  const items = await loadPdfTextItems(await file.arrayBuffer());
+
+  let local: ParseResult | null = null;
+  try {
+    local = parseSguTextItems(items);
+  } catch (localError) {
+    console.warn('El parser local falló.', localError);
+  }
+
+  let sessions: ClassSession[] = [];
+  try {
+    sessions = await extractScheduleWithAI(textItemsToPlainText(items));
+  } catch (edgeError) {
+    console.warn('La extracción con Edge Function falló, usando parser local.', edgeError);
+    sessions = local?.sessions ?? [];
+  }
+
+  return { ...local, sessions };
+};
 
 export const useScheduleUpload = ({ deviceId, onSuccess }: UseScheduleUploadProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -14,74 +41,45 @@ export const useScheduleUpload = ({ deviceId, onSuccess }: UseScheduleUploadProp
 
   const clearError = () => setError(null);
 
-  const uploadFile = async (file: File) => {
+  const uploadFile = async (file: File): Promise<void> => {
     setIsProcessing(true);
     setError(null);
 
-    return new Promise<void>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onloadend = async () => {
-        const base64data = reader.result as string;
-        const mimeType = file.type;
+    try {
+      if (file.type !== 'application/pdf') {
+        throw new Error(`Tipo de archivo no soportado: ${file.type || 'desconocido'}`);
+      }
+      const parsed = await parsePdfSchedule(file);
 
-        try {
-          let parsedResult;
+      if (parsed.sessions.length === 0) {
+        throw new Error('No se encontraron materias en el documento. Verifica que sea el reporte de horarios del SGU.');
+      }
 
-          if (mimeType === 'application/pdf') {
-            try {
-              parsedResult = await parseScheduleFileWithEdge(base64data);
-            } catch (edgeError) {
-              console.warn(
-                "La extracción con Edge Function falló, usando parser local.",
-                edgeError
-              );
-              parsedResult = await parseScheduleFile(base64data, mimeType);
-            }
-          } else {
-            parsedResult = await parseScheduleFile(base64data, mimeType);
-          }
+      const newSchedule: Schedule = {
+        title: 'Mi Horario Académico',
+        sessions: resolveConflicts(assignSubjectColors(parsed.sessions)),
+        lastUpdated: new Date(),
+        academic_period: parsed.academic_period,
+        faculty: parsed.faculty,
+      };
 
-          const { sessions, faculty, academic_period } = parsedResult;
-
-          const newSchedule: Schedule = {
-            title: "Mi Horario Académico",
-            sessions: sessions,
-            lastUpdated: new Date(),
-            academic_period: academic_period || "SEPTIEMBRE 2025 - ENERO 2026",
-            faculty: faculty || "FACULTAD DE CIENCIAS INFORMÁTICAS",
-          };
-
-          // Save to DB if deviceId is present
-          if (deviceId) {
-            try {
-              const saved = await saveScheduleToDB(deviceId, newSchedule);
-              if (saved && saved[0]) {
-                newSchedule.id = saved[0].id;
-              }
-            } catch (dbError) {
-              console.error("Error guardando horario en la base de datos:", dbError);
-            }
-          }
-
-          onSuccess(newSchedule);
-          resolve();
-        } catch (err: any) {
-          const msg = err.message || "No se pudo procesar el documento.";
-          setError(msg);
-          console.error(err);
-          reject(err);
-        } finally {
-          setIsProcessing(false);
+      // saveScheduleToDB ignora a los invitados (deviceId no UUID)
+      if (deviceId) {
+        const saved = await saveScheduleToDB(deviceId, newSchedule);
+        if (saved?.[0]) {
+          newSchedule.id = saved[0].id;
         }
-      };
+      }
 
-      reader.onerror = () => {
-        setIsProcessing(false);
-        setError("Error de lectura del archivo.");
-        reject(new Error("Error de lectura del archivo."));
-      };
-    });
+      onSuccess(newSchedule);
+    } catch (err: unknown) {
+      const msg = err instanceof Error && err.message ? err.message : 'No se pudo procesar el documento.';
+      setError(msg);
+      console.error(err);
+      throw err instanceof Error ? err : new Error(msg);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return {

@@ -1,5 +1,9 @@
 /* Global styles — Inforario v3.0 "The Academic Curator" */
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --color-background:              #fbf9f8;
   --color-surface:                 #fbf9f8;

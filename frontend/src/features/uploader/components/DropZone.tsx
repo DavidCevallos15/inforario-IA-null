@@ -4,6 +4,8 @@ import { Upload, FileText, X, Loader2, ArrowRight } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
 
+const MAX_FILE_SIZE_MB = 10;
+
 interface DropZoneProps {
   onUpload: (file: File) => Promise<void>;
   isProcessing: boolean;
@@ -48,6 +50,10 @@ export const DropZone: React.FC<DropZoneProps> = ({ onUpload, isProcessing }) =>
       setErrorMsg("Por favor sube un archivo compatible: PDF del reporte de horarios.");
       return;
     }
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      setErrorMsg(`El archivo supera ${MAX_FILE_SIZE_MB} MB. El reporte del SGU suele pesar menos de 1 MB.`);
+      return;
+    }
     setSelectedFile(file);
   };
 
@@ -55,8 +61,8 @@ export const DropZone: React.FC<DropZoneProps> = ({ onUpload, isProcessing }) =>
     if (selectedFile) {
       try {
         await onUpload(selectedFile);
-      } catch (err: any) {
-        setErrorMsg(err.message || "Error al procesar el archivo");
+      } catch (err: unknown) {
+        setErrorMsg(err instanceof Error && err.message ? err.message : "Error al procesar el archivo");
       }
     }
   };

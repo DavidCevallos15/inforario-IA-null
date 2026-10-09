@@ -3,15 +3,18 @@ import { Calendar, X, Download, CheckCircle2, RefreshCw } from 'lucide-react';
 import { Schedule } from '../../types';
 import { useCalendarStatus } from '../../hooks/useCalendarStatus';
 import { buildCalendarEventsFromSchedule, syncCalendarEvents } from '../../services/google/googleCalendarEdge';
+import { connectGoogleCalendar } from '../../services/google/googleCalendarConnect';
+import { getSemesterRange } from '../../services/ics/semesterRange';
 
 interface CalendarModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (startDate: Date, endDate: Date) => void;
   schedule: Schedule;
+  isLoggedIn: boolean;
 }
 
-const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, onConfirm, schedule }) => {
+const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, onConfirm, schedule, isLoggedIn }) => {
   const [syncing, setSyncing] = useState(false);
   const {
     isLinked,
@@ -28,46 +31,40 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, onConfir
 
   if (!isOpen) return null;
 
+  // Fechas derivadas del período del SGU (o un ciclo estándar si no se reconoce)
+  const { start, end } = getSemesterRange(schedule.academic_period);
+  const formatDate = (d: Date) => d.toLocaleDateString('es-EC', { day: 'numeric', month: 'long', year: 'numeric' });
+
   const handleSubmit = () => {
-    // Calculamos automáticamente en el fondo para evitar fricción UX
-    const today = new Date();
-    const start = new Date(today);
-    start.setDate(today.getDate() + ((1 + 7 - today.getDay()) % 7)); // Próximo lunes
-    
-    const end = new Date(start);
-    end.setMonth(end.getMonth() + 4);
-    end.setDate(end.getDate() + 15);
-    
     onConfirm(start, end);
     onClose();
   };
 
   const handleGoogleSync = async () => {
-    if (!isLinked) {
-      alert('Tu cuenta no está conectada a Google Calendar. Conecta Google primero para sincronizar.');
+    if (!isLoggedIn) return;
+
+    const events = buildCalendarEventsFromSchedule(schedule, start, end);
+    if (!events.length) {
+      alert('No hay clases presenciales sin choque de horario para sincronizar.');
+      return;
+    }
+    if (!confirm(`Se agregarán ${events.length} clases semanales a tu calendario principal de Google. ¿Continuar?`)) {
       return;
     }
 
     setSyncing(true);
-    const today = new Date();
-    const start = new Date(today);
-    start.setDate(today.getDate() + ((1 + 7 - today.getDay()) % 7)); 
-    
-    const end = new Date(start);
-    end.setMonth(end.getMonth() + 4);
-    end.setDate(end.getDate() + 15);
-
     try {
-      const events = buildCalendarEventsFromSchedule(schedule, start, end);
-      const res = await syncCalendarEvents({ events, calendarId: 'primary' });
-      if (res.success) {
-        alert(res.message);
-        onClose();
-      } else {
-        alert("Error: " + res.message);
+      // Primera vez: abrir el consentimiento de Google y vincular la cuenta
+      if (!isLinked) {
+        await connectGoogleCalendar();
+        await refreshStatus();
       }
-    } catch {
-      alert("Error en la sincronización.");
+
+      const res = await syncCalendarEvents({ events, calendarId: 'primary' });
+      alert(res.success ? res.message : `Error: ${res.message}`);
+      if (res.success) onClose();
+    } catch (syncError: unknown) {
+      alert(syncError instanceof Error ? syncError.message : 'Error en la sincronización.');
     } finally {
       setSyncing(false);
     }
@@ -101,12 +98,15 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, onConfir
               <p className="text-xs text-on-surface-variant border-l-2 border-primary/50 pl-2">
                  Al abrir el archivo descargado, todas tus materias se programarán automáticamente en tu aplicación semana a semana hasta finalizar el ciclo.
               </p>
+              <p className="text-xs font-semibold text-on-surface mt-3">
+                Clases del {formatDate(start)} al {formatDate(end)}
+              </p>
             </div>
 
             <div className="flex flex-col gap-3">
               <button 
                 onClick={handleGoogleSync}
-                disabled={syncing || statusLoading}
+                disabled={!isLoggedIn || syncing || statusLoading}
                 className="w-full py-3 bg-surface-container text-on-surface border border-outline-variant/15 font-bold rounded-xl hover:bg-surface-container-high transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-70"
               >
                 {syncing ? <RefreshCw size={18} className="animate-spin" /> : (
@@ -120,8 +120,11 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, onConfir
                 Sincronizar con Google Calendar
               </button>
 
-              {!statusLoading && !isLinked && (
-                <p className="text-xs text-error px-1">Google Calendar no está vinculado en tu cuenta.</p>
+              {!isLoggedIn && (
+                <p className="text-xs text-on-surface-variant px-1">Inicia sesión para sincronizar directamente con Google Calendar.</p>
+              )}
+              {isLoggedIn && !statusLoading && !isLinked && (
+                <p className="text-xs text-on-surface-variant px-1">La primera vez se abrirá Google para autorizar el acceso a tu calendario.</p>
               )}
 
               {statusError && (

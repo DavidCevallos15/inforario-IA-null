@@ -1,27 +1,10 @@
-import { ChartBar, Calendar, Download, Save, Palette, Upload, LogIn } from "lucide-react";
-
-// Real Supabase Credentials
-// Configured with specific project keys provided by the user.
+// Valores por defecto del proyecto Supabase de producción.
+// Se pueden sobrescribir con VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY en .env.local.
+// La clave "publishable" es pública por diseño: la seguridad depende de las políticas RLS.
 export const SUPABASE_URL = "https://jmybcsusmazaxforhsms.supabase.co";
 export const SUPABASE_KEY = "sb_publishable_Sb2jQcuTd4OLQhloeIZTww_k95fFjdw";
-// Google Calendar
-// En tu archivo constants.ts
-// Safe process.env access
-const getEnvVar = (key: string) => {
-  try {
-    if (typeof process !== 'undefined' && process.env) {
-      return process.env[key];
-    }
-  } catch (e) {
-    // Ignore error
-  }
-  return "";
-};
 
-// Try process.env first, then fallback to localStorage for browser-based configuration
-export const GOOGLE_CLIENT_ID = getEnvVar("GOOGLE_CLIENT_ID") || (typeof window !== 'undefined' ? localStorage.getItem('google_client_id') : "") || "303071798512-muiirok53evctbn1rdmtisl2f6rednbn.apps.googleusercontent.com";
-
-export const FEATURES = {
-  GUEST: ['UPLOAD', 'PROCESS', 'RESOLVE_CONFLICT'],
-  REGISTERED: ['UPLOAD', 'PROCESS', 'RESOLVE_CONFLICT', 'EDIT_NAME', 'SAVE_CLOUD', 'CUSTOMIZE_COLOR', 'DOWNLOAD_PDF', 'SYNC_CALENDAR']
-};
+// ID de cliente OAuth de Google (público). Debe coincidir con el secreto GOOGLE_CLIENT_ID
+// configurado en las Edge Functions de Supabase.
+export const GOOGLE_CLIENT_ID =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID || "303071798512-muiirok53evctbn1rdmtisl2f6rednbn.apps.googleusercontent.com";

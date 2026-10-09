@@ -1,3 +1,4 @@
+import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 
 type RawSession = {
@@ -17,6 +18,9 @@ type ExtractedPayload = {
 
 const ALLOWED_DAYS = new Set(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']);
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+// La función es pública (verify_jwt = false): limitar la entrada evita gastar
+// la cuota de Groq con textos arbitrariamente grandes. Un reporte SGU ronda 3–8k caracteres.
+const MAX_PDF_TEXT_CHARS = 40_000;
 
 const json = (status: number, payload: unknown) =>
   new Response(JSON.stringify(payload), {
@@ -30,8 +34,8 @@ const normalizeString = (value: unknown, fallback: string) => {
   return trimmed.length > 0 ? trimmed : fallback;
 };
 
-const isValidDay = (day: string) => ALLOWED_DAYS.has(day);
-const isValidTime = (time: string) => TIME_REGEX.test(time);
+const isValidDay = (day: string | undefined) => !!day && ALLOWED_DAYS.has(day);
+const isValidTime = (time: string | undefined) => !!time && TIME_REGEX.test(time);
 const isVirtualLike = (value: unknown) => String(value ?? '').toUpperCase().includes('VIRTUAL');
 
 const validateSessions = (sessions: unknown) => {
@@ -102,6 +106,48 @@ const systemPrompt = [
   'Ejemplo INCORRECTO: "TECNOLOGÍAS DE LA SISTEMAS DISTRIBUIDOS (A19)"',
 ].join('\n');
 
+// Límites de uso: por cliente (IP anonimizada) y global, para proteger la cuota de Groq
+const PER_CLIENT_LIMIT = 15;
+const GLOBAL_LIMIT = 300;
+const RATE_WINDOW_SECONDS = 60 * 60;
+
+const sha256Hex = async (value: string) => {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+};
+
+/** Devuelve una respuesta 429 si se superó algún límite, o null si la petición puede seguir. */
+const checkRateLimit = async (req: Request): Promise<Response | null> => {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.warn('[WARN] Sin credenciales de servicio: límite de uso desactivado');
+    return null;
+  }
+
+  const admin = createClient(supabaseUrl, serviceRoleKey);
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  // Se guarda un hash, nunca la IP en claro
+  const clientKey = `ip:${await sha256Hex(ip)}`;
+
+  for (const [key, limit] of [[clientKey, PER_CLIENT_LIMIT], ['global', GLOBAL_LIMIT]] as const) {
+    const { data: allowed, error } = await admin.rpc('consume_ai_extraction_quota', {
+      p_client_key: key,
+      p_limit: limit,
+      p_window_seconds: RATE_WINDOW_SECONDS,
+    });
+    if (error) {
+      // Si el control falla no se bloquea al estudiante: el parser local es el respaldo igualmente
+      console.error('[ERROR] Límite de uso no disponible', error.message);
+      return null;
+    }
+    if (allowed === false) {
+      return json(429, { error: 'Demasiadas solicitudes. Intenta de nuevo más tarde.' });
+    }
+  }
+  return null;
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -115,12 +161,21 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
-    const { pdfText } = body as { pdfText?: string };
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return json(400, { error: 'El cuerpo debe ser JSON válido.' });
+    }
+    const { pdfText } = (body ?? {}) as { pdfText?: unknown };
 
-    if (!pdfText || !pdfText.trim()) {
+    if (typeof pdfText !== 'string' || !pdfText.trim()) {
       console.error('[ERROR] Falta pdfText');
       return json(400, { error: 'pdfText es obligatorio.' });
+    }
+
+    if (pdfText.length > MAX_PDF_TEXT_CHARS) {
+      return json(413, { error: `pdfText excede ${MAX_PDF_TEXT_CHARS} caracteres.` });
     }
 
     const groqApiKey = Deno.env.get('GROQ_API_KEY');
@@ -130,6 +185,9 @@ Deno.serve(async (req) => {
       console.error('[ERROR] Falta GROQ_API_KEY');
       return json(500, { error: 'Falta GROQ_API_KEY' });
     }
+
+    const rateLimit = await checkRateLimit(req);
+    if (rateLimit) return rateLimit;
 
     console.log('[LOG] Llamando a Groq...');
 
@@ -163,7 +221,7 @@ Deno.serve(async (req) => {
 
     const content = data?.choices?.[0]?.message?.content;
     if (typeof content !== 'string' || !content.trim()) {
-      console.error('[ERROR] Groq respondió sin contenido parseable', { data });
+      console.error('[ERROR] Groq respondió sin contenido parseable');
       return json(502, { error: 'Groq respondió sin contenido parseable.' });
     }
 
@@ -171,7 +229,7 @@ Deno.serve(async (req) => {
     try {
       parsed = JSON.parse(content) as ExtractedPayload;
     } catch {
-      console.error('[ERROR] Groq devolvió contenido no JSON', { content });
+      console.error('[ERROR] Groq devolvió contenido no JSON', { length: content.length });
       return json(502, { error: 'Groq devolvió contenido no JSON.' });
     }
 
