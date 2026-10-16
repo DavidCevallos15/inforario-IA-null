@@ -5,6 +5,8 @@ import '@fontsource-variable/atkinson-hyperlegible-next/wght.css';
 import '@fontsource/kalam/latin-400.css';
 import '@fontsource/kalam/latin-700.css';
 import { MotionGlobalConfig } from 'framer-motion';
+// Vercel Web Analytics: visitas y páginas, sin cookies (plan Hobby). En local no envía datos.
+import { Analytics } from '@vercel/analytics/react';
 import App from './App';
 
 // Solo en desarrollo: ?static salta las animaciones (capturas y revisiones visuales)
@@ -21,5 +23,6 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <App />
+    <Analytics />
   </React.StrictMode>
 );
